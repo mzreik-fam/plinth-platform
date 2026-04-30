@@ -85,7 +85,7 @@ export default function AuditLogsPage() {
                 <TableBody>
                   {logs.map((log: any) => (
                     <TableRow key={log.id}>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
                         {new Date(log.created_at).toLocaleString()}
                       </TableCell>
                       <TableCell>
@@ -98,7 +98,13 @@ export default function AuditLogsPage() {
                         {log.entity_id && <span className="text-muted-foreground text-xs ml-1">· {log.entity_id.slice(0, 8)}</span>}
                       </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">
-                        {log.details || "—"}
+                        {typeof log.details === "object" && log.details !== null ? (
+                          <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-24">
+                            {JSON.stringify(log.details, null, 2)}
+                          </pre>
+                        ) : (
+                          log.details || "—"
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {log.user_id?.slice(0, 8) || "—"}
