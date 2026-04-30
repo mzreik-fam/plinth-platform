@@ -1,6 +1,9 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {useLocale} from "next-intl";
+import Link from "next/link";
+import {Button} from "@/components/ui/button";
 import {useSearchParams} from "next/navigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -12,10 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {FileText, TrendingUp, AlertTriangle, CheckCircle2, Clock, Download} from "lucide-react";
+import {FileText, TrendingUp, AlertTriangle, CheckCircle2, Clock} from "lucide-react";
 
 export default function FinancialStatementPage() {
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const transactionId = searchParams.get("transaction_id");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +36,14 @@ export default function FinancialStatementPage() {
   }, [transactionId]);
 
   if (!transactionId) {
-    return <div className="text-center py-8">Transaction ID required</div>;
+    return (
+      <div className="text-center py-16">
+        <p className="text-muted-foreground">Select a transaction to view its statement.</p>
+        <Link href={`/${locale}/sales`}>
+          <Button className="mt-4">Go to Sales</Button>
+        </Link>
+      </div>
+    );
   }
 
   if (loading) {

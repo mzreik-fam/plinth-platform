@@ -17,11 +17,11 @@ const statusColors: Record<string, string> = {
 };
 
 const statusBgColors: Record<string, string> = {
-  eoi: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20",
-  booking_pending: "bg-blue-50 border-blue-200 dark:bg-blue-950/20",
-  confirmed: "bg-green-50 border-green-200 dark:bg-green-950/20",
-  cancelled: "bg-red-50 border-red-200 dark:bg-red-950/20",
-  terminated: "bg-red-50 border-red-200 dark:bg-red-950/20",
+  eoi: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900/30",
+  booking_pending: "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/30",
+  confirmed: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900/30",
+  cancelled: "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/30",
+  terminated: "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/30",
 };
 
 export default function SalesPage() {
@@ -106,6 +106,8 @@ export default function SalesPage() {
                           <span>{tx.agent_name}</span>
                         </>
                       )}
+                      <span className="text-border">·</span>
+                      <span>{new Date(tx.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
 

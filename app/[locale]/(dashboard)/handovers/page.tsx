@@ -68,8 +68,11 @@ export default function HandoversPage() {
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : handovers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No handovers found. Create one from a confirmed transaction.
+            <div className="text-center py-8 text-muted-foreground space-y-4">
+              <p>No handovers found. Create one from a confirmed transaction.</p>
+              <Link href={`/${locale}/sales`}>
+                <Button variant="outline" size="sm">Go to Sales</Button>
+              </Link>
             </div>
           ) : (
             <Table>

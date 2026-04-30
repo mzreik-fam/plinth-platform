@@ -48,8 +48,11 @@ export default function TerminationsPage() {
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : cases.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No termination cases found. Create one from a transaction.
+            <div className="text-center py-8 text-muted-foreground space-y-4">
+              <p>No termination cases found. Create one from a transaction.</p>
+              <Link href={`/${locale}/sales`}>
+                <Button variant="outline" size="sm">Go to Sales</Button>
+              </Link>
             </div>
           ) : (
             <Table>

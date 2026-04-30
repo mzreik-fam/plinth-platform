@@ -38,14 +38,14 @@ export async function GET(request: NextRequest) {
   let query;
   if (role) {
     query = sql`
-      SELECT id, email, username, full_name, role, is_active, created_at
+      SELECT id, email, username, full_name, role, is_active, invite_token, invite_expires_at, created_at
       FROM users
       WHERE role = ${role}
       ORDER BY created_at DESC
     `;
   } else {
     query = sql`
-      SELECT id, email, username, full_name, role, is_active, created_at
+      SELECT id, email, username, full_name, role, is_active, invite_token, invite_expires_at, created_at
       FROM users
       ORDER BY created_at DESC
     `;
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
     const result = await sql`
-      INSERT INTO users (tenant_id, email, username, password_hash, full_name, role, invite_token, invite_expires_at)
+      INSERT INTO users (tenant_id, email, username, password_hash, full_name, role, is_active, invite_token, invite_expires_at)
       VALUES (
         ${auth.tenantId},
         ${data.email},
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
         ${tempPasswordHash},
         ${data.fullName},
         ${data.role},
+        false,
         ${inviteToken},
         NOW() + INTERVAL '7 days'
       )

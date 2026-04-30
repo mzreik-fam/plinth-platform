@@ -10,7 +10,6 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{toke
     FROM users
     WHERE invite_token = ${token}
     AND invite_expires_at > NOW()
-    AND is_active = true
   `;
 
   if (!user.length) {
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest, {params}: {params: Promise<{tok
     FROM users
     WHERE invite_token = ${token}
     AND invite_expires_at > NOW()
-    AND is_active = true
   `;
 
   if (!user.length) {
@@ -46,6 +44,7 @@ export async function POST(request: NextRequest, {params}: {params: Promise<{tok
   await sql`
     UPDATE users
     SET password_hash = ${passwordHash},
+        is_active = true,
         invite_token = NULL,
         invite_expires_at = NULL,
         updated_at = NOW()

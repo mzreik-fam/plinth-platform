@@ -125,10 +125,10 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <PipelineRow label="EOI" value={stats?.sales?.eoi_count || 0} color="bg-yellow-500" />
-            <PipelineRow label="Booking Pending" value={stats?.sales?.booking_pending_count || 0} color="bg-blue-500" />
-            <PipelineRow label="Confirmed" value={stats?.sales?.confirmed_count || 0} color="bg-green-500" />
-            <PipelineRow label="Cancelled" value={stats?.sales?.cancelled_count || 0} color="bg-red-500" />
+            <PipelineRow label="EOI" value={stats?.sales?.eoi_count || 0} color="bg-yellow-500" stats={stats} />
+            <PipelineRow label="Booking Pending" value={stats?.sales?.booking_pending_count || 0} color="bg-blue-500" stats={stats} />
+            <PipelineRow label="Confirmed" value={stats?.sales?.confirmed_count || 0} color="bg-green-500" stats={stats} />
+            <PipelineRow label="Cancelled" value={stats?.sales?.cancelled_count || 0} color="bg-red-500" stats={stats} />
             <div className="pt-2 border-t">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Pipeline Value</span>
@@ -217,7 +217,9 @@ function StatCard({title, value, icon: Icon, description, trend, highlight, aler
   );
 }
 
-function PipelineRow({label, value, color}: {label: string; value: number; color: string}) {
+function PipelineRow({label, value, color, stats}: {label: string; value: number; color: string; stats: any}) {
+  const total = (stats?.sales?.eoi_count || 0) + (stats?.sales?.booking_pending_count || 0) + (stats?.sales?.confirmed_count || 0) + (stats?.sales?.cancelled_count || 0);
+  const width = total > 0 ? (value / total) * 100 : 0;
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
@@ -225,7 +227,7 @@ function PipelineRow({label, value, color}: {label: string; value: number; color
         <span className="font-medium">{value}</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all`} style={{width: `${Math.min(value * 10, 100)}%`}} />
+        <div className={`h-full ${color} rounded-full transition-all`} style={{width: `${width}%`}} />
       </div>
     </div>
   );

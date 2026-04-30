@@ -78,7 +78,7 @@ export async function notifyUnitApprovalRequested({to, unitNumber, projectName, 
     to,
     title: 'Unit Approval Requested',
     body: `${requestedBy} has requested approval for unit <strong>${unitNumber}</strong> in <strong>${projectName}</strong>. Please review and approve or reject.`,
-    actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/en/approvals`,
+    actionUrl: `${process.env.NEXT_PUBLIC_APP_URL?.trim()}/en/approvals`,
     actionLabel: 'Review Approval',
   });
 }
@@ -100,7 +100,7 @@ export async function notifyPaymentReceived({to, unitNumber, amount, transaction
     to,
     title: 'Payment Received',
     body: `A payment of <strong>AED ${amount.toLocaleString()}</strong> has been confirmed for unit <strong>${unitNumber}</strong>.`,
-    actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/en/financial-statement?transaction_id=${transactionId}`,
+    actionUrl: `${process.env.NEXT_PUBLIC_APP_URL?.trim()}/en/financial-statement?transaction_id=${transactionId}`,
     actionLabel: 'View Statement',
   });
 }

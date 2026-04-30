@@ -11,6 +11,7 @@ import {Badge} from "@/components/ui/badge";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ArrowLeft, Copy, FileText, KeyRound, AlertTriangle} from "lucide-react";
 import Link from "next/link";
+import {toast} from "sonner";
 
 const statusColors: Record<string, string> = {
   eoi: "warning",
@@ -82,7 +83,7 @@ export default function TransactionDetailPage() {
     if (!transaction?.portal_token) return;
     const url = `${window.location.origin}/${locale}/portal/${transaction.portal_token}`;
     navigator.clipboard.writeText(url);
-    alert("Portal link copied!");
+    toast.success("Portal link copied!");
   }
 
   if (loading) return <div className="text-muted-foreground">{tc("loading")}</div>;
@@ -109,7 +110,15 @@ export default function TransactionDetailPage() {
         <CardContent className="pt-6 space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("unit")}</span>
-            <span>{transaction.unit_number} · {transaction.unit_type}</span>
+            <Link href={`/${locale}/units/${transaction.unit_id}`} className="font-medium hover:underline">
+              {transaction.unit_number} · {transaction.unit_type}
+            </Link>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Buyer</span>
+            <Link href={`/${locale}/buyers`} className="font-medium hover:underline">
+              {transaction.buyer_name}
+            </Link>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("totalPrice")}</span>
@@ -123,6 +132,12 @@ export default function TransactionDetailPage() {
             <span className="text-muted-foreground">Remaining</span>
             <span className="font-medium">AED {remaining.toLocaleString()}</span>
           </div>
+          {transaction.agent_name && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Agent</span>
+              <Link href={`/${locale}/users`} className="font-medium hover:underline">{transaction.agent_name}</Link>
+            </div>
+          )}
           {transaction.portal_token && (
             <div className="flex items-center gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={copyPortalLink}>
