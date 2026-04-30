@@ -21,6 +21,8 @@ const updateTransactionSchema = z.object({
   status: z.enum(['eoi', 'booking_pending', 'confirmed', 'cancelled']).optional(),
   bookingAmount: z.number().optional(),
   notes: z.string().optional(),
+  signedAt: z.string().datetime().optional(),
+  signedMethod: z.enum(['digital', 'paper']).optional(),
 });
 
 export async function GET(request: NextRequest, {params}: {params: Promise<{id: string}>}) {
@@ -80,6 +82,41 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
 
     const existing = await sql`SELECT * FROM transactions WHERE id = ${id}`;
 
+    if (existing.length === 0) {
+      return NextResponse.json({error: 'Transaction not found'}, {status: 404});
+    }
+
+    const transaction = existing[0];
+
+    // P0-4: Enforce booking confirmation rules server-side
+    if (data.status === 'confirmed') {
+      // Rule 1: Must have signed_at set (digital signature OR admin wet-signature confirmation)
+      const hasSignature = transaction.signed_at != null || data.signedAt != null;
+      
+      if (!hasSignature) {
+        return NextResponse.json(
+          {error: 'Booking cannot be confirmed: Buyer signature required. Admin may check "Buyer signed on paper" for wet-signature interim.'},
+          {status: 400}
+        );
+      }
+
+      // Rule 2: Must have at least one confirmed payment
+      const confirmedPayments = await sql`
+        SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total
+        FROM payments 
+        WHERE transaction_id = ${id} AND status = 'confirmed'
+      `;
+      
+      const hasConfirmedPayment = confirmedPayments[0]?.count > 0;
+      
+      if (!hasConfirmedPayment) {
+        return NextResponse.json(
+          {error: 'Booking cannot be confirmed: At least one confirmed payment is required.'},
+          {status: 400}
+        );
+      }
+    }
+
     const updates: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
@@ -97,6 +134,10 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     if (data.notes) {
       updates.push(`notes = $${paramIndex++}`);
       values.push(data.notes);
+    }
+    if (data.signedAt) {
+      updates.push(`signed_at = $${paramIndex++}`);
+      values.push(data.signedAt);
     }
 
     if (updates.length === 0) {

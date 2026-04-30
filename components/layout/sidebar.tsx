@@ -25,6 +25,7 @@ import {
   CalendarDays,
   ClipboardList,
   MapPin,
+  Wallet,
 } from "lucide-react";
 
 const mainNavItems = [
@@ -41,6 +42,7 @@ const processNavItems = [
   {key: "handovers", href: "/handovers", icon: KeyRound},
   {key: "terminations", href: "/terminations", icon: AlertTriangle},
   {key: "approvals", href: "/approvals", icon: ClipboardCheck},
+  {key: "pending_payments", href: "/payments/pending", icon: Wallet},
 ];
 
 const adminNavItems = [

@@ -10,7 +10,7 @@ import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ArrowLeft, Copy, FileText, KeyRound, AlertTriangle} from "lucide-react";
+import {ArrowLeft, Copy, FileText, KeyRound, AlertTriangle, CheckCircle, XCircle, ExternalLink, PenTool, CreditCard} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 import {
@@ -33,6 +33,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {Skeleton} from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const paymentMethodLabels: Record<string, string> = {
   bank_transfer: "Bank Transfer",
@@ -62,6 +70,11 @@ export default function TransactionDetailPage() {
   const [paymentForm, setPaymentForm] = useState({amount: "", paymentMethod: "bank_transfer", referenceNumber: "", notes: ""});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{role: string} | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [actionType, setActionType] = useState<'confirm' | 'reject' | null>(null);
+  const [actionNotes, setActionNotes] = useState("");
+  const [processingAction, setProcessingAction] = useState(false);
+  const [wetSignatureChecked, setWetSignatureChecked] = useState(false);
 
   useEffect(() => {
     fetchTransaction();
@@ -94,14 +107,25 @@ export default function TransactionDetailPage() {
   }
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  const canConfirmPayments = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
-  async function updateStatus(newStatus: string) {
+  async function updateStatus(newStatus: string, options?: {signedAt?: string}) {
+    const body: any = {status: newStatus};
+    if (options?.signedAt) {
+      body.signedAt = options.signedAt;
+    }
     const res = await fetch(`/api/transactions/${id}`, {
       method: "PATCH",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({status: newStatus}),
+      body: JSON.stringify(body),
     });
-    if (res.ok) fetchTransaction();
+    if (res.ok) {
+      fetchTransaction();
+      setWetSignatureChecked(false);
+    } else {
+      const error = await res.json();
+      toast.error(error.error || "Failed to update status");
+    }
   }
 
   async function recordPayment(e: React.FormEvent) {
@@ -127,6 +151,47 @@ export default function TransactionDetailPage() {
     }
   }
 
+  async function handlePaymentAction() {
+    if (!selectedPayment || !actionType) return;
+
+    setProcessingAction(true);
+    try {
+      const res = await fetch(`/api/payments/${selectedPayment.id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          action: actionType,
+          notes: actionNotes || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(
+          actionType === 'confirm' 
+            ? "Payment confirmed successfully" 
+            : "Payment rejected"
+        );
+        setSelectedPayment(null);
+        setActionType(null);
+        setActionNotes("");
+        fetchTransaction();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to process payment");
+      }
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setProcessingAction(false);
+    }
+  }
+
+  function openActionDialog(payment: any, action: 'confirm' | 'reject') {
+    setSelectedPayment(payment);
+    setActionType(action);
+    setActionNotes("");
+  }
+
   function copyPortalLink() {
     if (!transaction?.portal_token) return;
     const url = `${window.location.origin}/${locale}/portal/${transaction.portal_token}`;
@@ -139,6 +204,11 @@ export default function TransactionDetailPage() {
 
   const totalPaid = payments.filter((p: any) => p.status === 'confirmed').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
   const remaining = Number(transaction.total_price) - totalPaid;
+  
+  // P0-4: Booking confirmation conditions
+  const hasSignature = transaction.signed_at != null || wetSignatureChecked;
+  const hasConfirmedPayment = payments.some((p: any) => p.status === 'confirmed');
+  const canConfirmBooking = transaction.status === 'booking_pending' && hasSignature && hasConfirmedPayment;
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -196,6 +266,71 @@ export default function TransactionDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Booking Confirmation Conditions */}
+      {transaction.status === 'booking_pending' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Booking Confirmation Requirements
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Signature Requirement */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {transaction.signed_at ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <PenTool className="h-4 w-4 text-amber-500" />
+                )}
+                <span className="text-sm font-medium">
+                  {transaction.signed_at ? 'Buyer Signed' : 'Buyer Signature Required'}
+                </span>
+                {transaction.signed_at && (
+                  <span className="text-xs text-muted-foreground">
+                    ({new Date(transaction.signed_at).toLocaleDateString()})
+                  </span>
+                )}
+              </div>
+              {!transaction.signed_at && (
+                <div className="flex items-start gap-2 pl-6">
+                  <input
+                    type="checkbox"
+                    id="wet-signature"
+                    checked={wetSignatureChecked}
+                    onChange={(e) => setWetSignatureChecked(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <Label htmlFor="wet-signature" className="text-sm font-normal cursor-pointer">
+                    Buyer signed on paper (wet signature)
+                  </Label>
+                </div>
+              )}
+            </div>
+            
+            {/* Payment Requirement */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {hasConfirmedPayment ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <CreditCard className="h-4 w-4 text-amber-500" />
+                )}
+                <span className="text-sm font-medium">
+                  {hasConfirmedPayment ? 'Confirmed Payment Received' : 'Confirmed Payment Required'}
+                </span>
+              </div>
+              {!hasConfirmedPayment && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  Record a payment below and have an admin confirm it.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Status Actions */}
       <Card>
@@ -274,7 +409,28 @@ export default function TransactionDetailPage() {
             <Button onClick={() => updateStatus('booking_pending')}>Move to Booking Pending</Button>
           )}
           {transaction.status === 'booking_pending' && (
-            <Button onClick={() => updateStatus('confirmed')}>Confirm Booking</Button>
+            <div className="relative inline-block">
+              <Button 
+                onClick={() => updateStatus('confirmed', wetSignatureChecked ? {signedAt: new Date().toISOString()} : undefined)}
+                disabled={!canConfirmBooking}
+                title={!canConfirmBooking 
+                  ? `Cannot confirm: ${!hasSignature ? 'Signature required. ' : ''}${!hasConfirmedPayment ? 'Confirmed payment required.' : ''}`
+                  : 'Confirm booking'
+                }
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Confirm Booking
+              </Button>
+              {!canConfirmBooking && (
+                <div className="absolute top-full left-0 mt-2 w-64 p-3 text-sm bg-popover text-popover-foreground rounded-md shadow-md border z-10">
+                  <p className="font-medium mb-1">Cannot confirm booking:</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    {!hasSignature && <li>Buyer signature required (check &quot;Buyer signed on paper&quot; if wet signature)</li>}
+                    {!hasConfirmedPayment && <li>At least one confirmed payment required</li>}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
           {(transaction.status === 'eoi' || transaction.status === 'booking_pending') && isSuperAdmin && (
             <Button variant="destructive" onClick={async () => {
@@ -345,16 +501,114 @@ export default function TransactionDetailPage() {
         <CardContent className="space-y-3">
           {payments.length === 0 && <p className="text-sm text-muted-foreground">No payments recorded.</p>}
           {payments.map((p: any) => (
-            <div key={p.id} className="flex justify-between items-center py-2 border-b last:border-0">
-              <div>
-                <p className="text-sm font-medium">AED {Number(p.amount).toLocaleString()}</p>
+            <div key={p.id} className="flex justify-between items-start py-2 border-b last:border-0">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">AED {Number(p.amount).toLocaleString()}</p>
+                  <Badge variant={p.status === 'confirmed' ? 'default' : p.status === 'rejected' ? 'destructive' : 'secondary'}>
+                    {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">{paymentMethodLabels[p.payment_method] || p.payment_method} · {p.reference_number || "—"}</p>
+                {p.status === 'confirmed' && p.confirmed_by_name && (
+                  <p className="text-xs text-muted-foreground">
+                    Confirmed by {p.confirmed_by_name} on {new Date(p.confirmed_at).toLocaleDateString()}
+                  </p>
+                )}
+                {p.proof_document_url && (
+                  <a 
+                    href={p.proof_document_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Proof
+                  </a>
+                )}
               </div>
-              <Badge variant="outline">{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</Badge>
+              {p.status === 'pending' && canConfirmPayments && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => openActionDialog(p, 'reject')}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Reject
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => openActionDialog(p, 'confirm')}
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Confirm
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </CardContent>
       </Card>
+
+      {/* Payment Action Dialog */}
+      <Dialog open={!!selectedPayment} onOpenChange={() => {
+        setSelectedPayment(null);
+        setActionType(null);
+        setActionNotes("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {actionType === 'confirm' ? 'Confirm Payment' : 'Reject Payment'}
+            </DialogTitle>
+            <DialogDescription>
+              {actionType === 'confirm' 
+                ? `Confirm receipt of AED ${selectedPayment ? Number(selectedPayment.amount).toLocaleString() : ''}?`
+                : `Reject this payment? It will not count toward the unit balance.`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="actionNotes">Notes (optional)</Label>
+            <Textarea
+              id="actionNotes"
+              value={actionNotes}
+              onChange={(e) => setActionNotes(e.target.value)}
+              placeholder={actionType === 'confirm' ? "Add confirmation notes..." : "Reason for rejection..."}
+              rows={3}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedPayment(null);
+                setActionType(null);
+                setActionNotes("");
+              }}
+              disabled={processingAction}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePaymentAction}
+              disabled={processingAction}
+              variant={actionType === 'reject' ? 'destructive' : 'default'}
+            >
+              {processingAction 
+                ? "Processing..." 
+                : actionType === 'confirm' 
+                  ? "Confirm Payment" 
+                  : "Reject Payment"
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

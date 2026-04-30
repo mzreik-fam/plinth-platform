@@ -74,26 +74,43 @@ export async function POST(request: NextRequest) {
     RETURNING *
   `;
 
-  // Create the 4 DLD steps
+  // Create the 4 DLD steps with proper deadline calculation
+  // Step 1 deadline: notice_sent_at + 30 days (or now + 30 days if notice_sent_at not set)
+  // Steps 2-4: NULL deadline until prior step's receipt_confirmed_at is set
   const caseId = result[0].id;
   const steps = [
-    {step_number: 1, step_name: 'Completion Notice (CN)', deadline_days: 0},
-    {step_number: 2, step_name: 'Developer Notice (DN)', deadline_days: 30},
-    {step_number: 3, step_name: 'DLD Termination Notice', deadline_days: 60},
-    {step_number: 4, step_name: 'Execution Request to DLD', deadline_days: 90},
+    {step_number: 1, step_name: 'Completion Notice (CN)'},
+    {step_number: 2, step_name: 'Developer Notice (DN)'},
+    {step_number: 3, step_name: 'DLD Termination Notice'},
+    {step_number: 4, step_name: 'Execution Request to DLD'},
   ];
 
   for (const step of steps) {
-    await sql`
-      INSERT INTO termination_steps (tenant_id, termination_case_id, step_number, step_name, deadline_date)
-      VALUES (
-        ${auth.tenantId},
-        ${caseId},
-        ${step.step_number},
-        ${step.step_name},
-        CURRENT_DATE + (${step.deadline_days} * INTERVAL '1 day')
-      )
-    `;
+    if (step.step_number === 1) {
+      // Step 1: deadline is notice_sent_at + 30 days, or now + 30 days if notice_sent_at not set yet
+      await sql`
+        INSERT INTO termination_steps (tenant_id, termination_case_id, step_number, step_name, deadline_date)
+        VALUES (
+          ${auth.tenantId},
+          ${caseId},
+          ${step.step_number},
+          ${step.step_name},
+          CURRENT_DATE + (30 * INTERVAL '1 day')
+        )
+      `;
+    } else {
+      // Steps 2-4: NULL deadline until prior step's receipt_confirmed_at is set
+      await sql`
+        INSERT INTO termination_steps (tenant_id, termination_case_id, step_number, step_name, deadline_date)
+        VALUES (
+          ${auth.tenantId},
+          ${caseId},
+          ${step.step_number},
+          ${step.step_name},
+          NULL
+        )
+      `;
+    }
   }
 
   // Update transaction status
