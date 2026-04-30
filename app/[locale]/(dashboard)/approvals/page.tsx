@@ -6,6 +6,17 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,6 +32,7 @@ export default function ApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{id: string; status: "approved" | "rejected"} | null>(null);
 
   useEffect(() => {
     fetch("/api/users/me")
@@ -104,24 +116,57 @@ export default function ApprovalsPage() {
                     <TableCell className="text-right">
                       {canReview ? (
                         <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600"
-                            onClick={() => reviewApproval(a.id, "approved")}
-                            disabled={processingId === a.id}
-                          >
-                            {processingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4 mr-1" /> Approve</>}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600"
-                            onClick={() => reviewApproval(a.id, "rejected")}
-                            disabled={processingId === a.id}
-                          >
-                            {processingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4 mr-1" /> Reject</>}
-                          </Button>
+                          <AlertDialog open={confirmAction?.id === a.id && confirmAction?.status === "approved"} onOpenChange={(open) => !open && setConfirmAction(null)}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600"
+                                onClick={() => setConfirmAction({id: a.id, status: "approved"})}
+                                disabled={processingId === a.id}
+                              >
+                                {processingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4 mr-1" /> Approve</>}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Approve Unit</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to approve {a.unit_number}? This will publish it as available.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setConfirmAction(null)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => { reviewApproval(a.id, "approved"); setConfirmAction(null); }}>Approve</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+
+                          <AlertDialog open={confirmAction?.id === a.id && confirmAction?.status === "rejected"} onOpenChange={(open) => !open && setConfirmAction(null)}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600"
+                                onClick={() => setConfirmAction({id: a.id, status: "rejected"})}
+                                disabled={processingId === a.id}
+                              >
+                                {processingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4 mr-1" /> Reject</>}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Reject Unit</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to reject {a.unit_number}? The unit will remain in draft status.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setConfirmAction(null)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => { reviewApproval(a.id, "rejected"); setConfirmAction(null); }}>Reject</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">Awaiting review</span>

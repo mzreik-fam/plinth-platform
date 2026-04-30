@@ -95,13 +95,13 @@ export async function POST(request: NextRequest) {
 
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-    // Check unit is available
+    // Check unit is available (draft is not allowed for transactions)
     const unitCheck = await sql`SELECT status FROM units WHERE id = ${data.unitId}`;
     if (unitCheck.length === 0) {
       return NextResponse.json({error: 'Unit not found'}, {status: 404});
     }
-    if (unitCheck[0].status !== 'available' && unitCheck[0].status !== 'draft') {
-      return NextResponse.json({error: 'Unit is not available'}, {status: 400});
+    if (unitCheck[0].status !== 'available') {
+      return NextResponse.json({error: 'Unit is not available for sale'}, {status: 400});
     }
 
     const portalToken = randomBytes(32).toString('hex');

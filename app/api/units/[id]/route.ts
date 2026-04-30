@@ -22,7 +22,7 @@ const updateUnitSchema = z.object({
   bathrooms: z.number().int().optional(),
   areaSqft: z.number().optional(),
   price: z.number().positive().optional(),
-  status: z.enum(['draft', 'available', 'pre_booked', 'booked', 'handed_over', 'terminated']).optional(),
+  status: z.enum(['draft', 'available']).optional(),
 });
 
 export async function GET(request: NextRequest, {params}: {params: Promise<{id: string}>}) {
@@ -93,11 +93,23 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
   const {id} = await params;
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-  const result = await sql`DELETE FROM units WHERE id = ${id} RETURNING id`;
+  try {
+    await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-  if (result.length === 0) {
-    return NextResponse.json({error: 'Unit not found'}, {status: 404});
+    const result = await sql`
+      DELETE FROM units WHERE id = ${id} RETURNING id
+    `;
+
+    if (result.length === 0) {
+      return NextResponse.json({error: 'Unit not found'}, {status: 404});
+    }
+
+    return NextResponse.json({success: true});
+  } catch (error: any) {
+    if (error.code === '23503') {
+      return NextResponse.json({error: 'Cannot delete unit because it has linked transactions or records'}, {status: 409});
+    }
+    console.error('Delete unit error:', error);
+    return NextResponse.json({error: 'Failed to delete unit'}, {status: 500});
   }
-
-  return NextResponse.json({success: true});
 }

@@ -536,3 +536,70 @@ toast.error(data.error || tc("error"))
 toast.success("Unit created successfully")
 router.push(`/${locale}/units`)
 ```
+
+---
+
+---
+
+# 🔵 UX — Convert Cards to Tables
+
+Cards are appropriate for visual/spatial data (units with type, price, bedrooms). They are the wrong pattern for administrative records where users need to scan fast, compare values, and find specific entries. The three pages below should be converted to tables. Everything else — data fetching, API calls, empty states, header buttons — stays the same.
+
+---
+
+## UX1 — Buyers page: convert from card grid to table
+
+**File:** `app/[locale]/(dashboard)/buyers/page.tsx`
+
+**Why cards are wrong here:**  
+With 50+ buyers you need to scan by name, find by phone, or filter by nationality. Cards waste vertical space and make this impossible at a glance.
+
+**New table columns:**
+
+| Full Name | Phone | Email | Emirates ID | Nationality | Created |
+
+**Notes:**
+- `created_at` formatted with `.toLocaleDateString()`
+- No actions column for now — edit/delete not yet in the API
+- Keep the existing empty state card and loading spinner unchanged
+- Keep the "New Buyer" button in the header unchanged
+
+---
+
+## UX2 — Projects page: convert from card grid to table
+
+**File:** `app/[locale]/(dashboard)/projects/page.tsx`
+
+**Why cards are wrong here:**  
+Projects are few (5–20 typically) and purely administrative data. A table is faster to read and easier to extend with edit/delete actions later.
+
+**New table columns:**
+
+| Name | Location | Area | Status |
+
+**Notes:**
+- `status` shown as a `<Badge>` — `default` variant for `active`, `secondary` for anything else (same as current card badge logic)
+- Keep the existing Dialog-based "New Project" button — it works and does not need to change
+- Keep the existing empty state and loading spinner unchanged
+- No actions column for now — no edit/delete endpoint exists in the API yet
+
+---
+
+## UX3 — Users page: convert from card grid to table
+
+**File:** `app/[locale]/(dashboard)/users/page.tsx`
+
+**Why cards are wrong here:**  
+This is an admin management screen. Every SaaS admin panel uses tables for user management. Cards make role comparison slow and hide the information density you need.
+
+**New table columns:**
+
+| Full Name | Username | Email | Role | Status | Created |
+
+**Notes:**
+- Role: use `.replace(/_/g, ' ')` with the **global regex** `/g` — not `.replace("_", " ")` which only replaces the first underscore. Then capitalise first letter: `role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())`
+- Status: `<Badge variant="default">Active</Badge>` or `<Badge variant="secondary">Inactive</Badge>` based on `user.is_active`
+- `created_at` formatted with `.toLocaleDateString()`
+- Keep the "Invite User" button in the header unchanged
+- Keep the existing empty state and loading spinner unchanged
+- No actions column for now — edit/deactivate not yet in the API

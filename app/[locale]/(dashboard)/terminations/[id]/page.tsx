@@ -9,7 +9,8 @@ import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {AlertTriangle, CheckCircle2, Lock, ArrowLeft, Upload, Calendar} from "lucide-react";
+import {AlertTriangle, CheckCircle2, ArrowLeft} from "lucide-react";
+import {toast} from "sonner";
 
 const stepDescriptions = [
   "Completion Notice (CN) — Day 0",
@@ -26,6 +27,7 @@ export default function TerminationDetailPage() {
   const [steps, setSteps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [stepForms, setStepForms] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -37,11 +39,31 @@ export default function TerminationDetailPage() {
     const data = await res.json();
     setTerminationCase(data.case);
     setSteps(data.steps || []);
+    // Initialize step forms from loaded data
+    const forms: Record<string, any> = {};
+    (data.steps || []).forEach((step: any) => {
+      forms[step.id] = {
+        notice_sent_at: step.notice_sent_at || "",
+        notice_method: step.notice_method || "",
+        courier_tracking: step.courier_tracking || "",
+        receipt_confirmed_at: step.receipt_confirmed_at || "",
+        notes: step.notes || "",
+      };
+    });
+    setStepForms(forms);
     setLoading(false);
   }
 
-  async function updateStep(stepId: string, updates: any) {
+  async function saveStep(stepId: string) {
     setUpdating(true);
+    const form = stepForms[stepId];
+    const updates: any = {};
+    if (form.notice_sent_at) updates.notice_sent_at = form.notice_sent_at;
+    if (form.notice_method) updates.notice_method = form.notice_method;
+    if (form.courier_tracking) updates.courier_tracking = form.courier_tracking;
+    if (form.receipt_confirmed_at) updates.receipt_confirmed_at = form.receipt_confirmed_at;
+    if (form.notes) updates.notes = form.notes;
+
     await fetch(`/api/termination-steps/${stepId}`, {
       method: "PATCH",
       headers: {"Content-Type": "application/json"},
@@ -49,6 +71,7 @@ export default function TerminationDetailPage() {
     });
     await loadData();
     setUpdating(false);
+    toast.success("Step details saved");
   }
 
   if (loading) return <div className="text-center py-8">Loading...</div>;
@@ -160,7 +183,8 @@ export default function TerminationDetailPage() {
                         <Input
                           type="datetime-local"
                           disabled={updating}
-                          onChange={(e) => updateStep(step.id, {notice_sent_at: e.target.value})}
+                          value={stepForms[step.id]?.notice_sent_at || ""}
+                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], notice_sent_at: e.target.value}})}
                         />
                       </div>
                       <div className="space-y-1">
@@ -168,7 +192,8 @@ export default function TerminationDetailPage() {
                         <Input
                           placeholder="Email + Courier"
                           disabled={updating}
-                          onBlur={(e) => updateStep(step.id, {notice_method: e.target.value})}
+                          value={stepForms[step.id]?.notice_method || ""}
+                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], notice_method: e.target.value}})}
                         />
                       </div>
                     </div>
@@ -178,7 +203,8 @@ export default function TerminationDetailPage() {
                         <Input
                           placeholder="Tracking number"
                           disabled={updating}
-                          onBlur={(e) => updateStep(step.id, {courier_tracking: e.target.value})}
+                          value={stepForms[step.id]?.courier_tracking || ""}
+                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], courier_tracking: e.target.value}})}
                         />
                       </div>
                       <div className="space-y-1">
@@ -186,7 +212,8 @@ export default function TerminationDetailPage() {
                         <Input
                           type="datetime-local"
                           disabled={updating}
-                          onChange={(e) => updateStep(step.id, {receipt_confirmed_at: e.target.value})}
+                          value={stepForms[step.id]?.receipt_confirmed_at || ""}
+                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], receipt_confirmed_at: e.target.value}})}
                         />
                       </div>
                     </div>
@@ -195,17 +222,28 @@ export default function TerminationDetailPage() {
                       <Input
                         placeholder="Add notes..."
                         disabled={updating}
-                        onBlur={(e) => updateStep(step.id, {notes: e.target.value})}
+                        value={stepForms[step.id]?.notes || ""}
+                        onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], notes: e.target.value}})}
                       />
                     </div>
-                    <Button
-                      size="sm"
-                      disabled={updating}
-                      onClick={() => updateStep(step.id, {status: "completed", completed_at: new Date().toISOString()})}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Mark Step Complete
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={updating}
+                        onClick={() => saveStep(step.id)}
+                      >
+                        Save Details
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={updating}
+                        onClick={() => saveStep(step.id)}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        Mark Step Complete
+                      </Button>
+                    </div>
                   </div>
                 )}
 

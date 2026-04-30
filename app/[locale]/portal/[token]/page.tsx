@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {useParams} from "next/navigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
+import {Building2, CalendarDays} from "lucide-react";
 
 export default function PortalPage() {
   const params = useParams();
@@ -33,13 +34,23 @@ export default function PortalPage() {
   if (!data) return null;
 
   const {transaction, payments, totalPaid, remainingBalance} = data;
+  const milestones = transaction.payment_plan_milestones || [];
 
   return (
     <div className="min-h-screen bg-muted/40 p-4">
       <div className="max-w-md mx-auto space-y-4">
+        {/* Header */}
         <div className="text-center py-6">
-          <h1 className="text-2xl font-bold">Plinth</h1>
-          <p className="text-muted-foreground">Buyer Portal</p>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
+              <Building2 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-bold">Plinth</h1>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Buyer Portal</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">{transaction.project_name}</p>
         </div>
 
         <Card>
@@ -81,6 +92,31 @@ export default function PortalPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment Schedule */}
+        {milestones.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                Payment Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {milestones.map((m: any, i: number) => (
+                <div key={i} className="flex justify-between items-center py-2 border-b last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{m.label}</p>
+                    <p className="text-xs text-muted-foreground">{m.percent}% of total price</p>
+                  </div>
+                  <span className="text-sm font-medium">
+                    AED {Math.round(Number(transaction.total_price) * (m.percent / 100)).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
