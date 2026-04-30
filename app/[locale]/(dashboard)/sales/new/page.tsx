@@ -140,10 +140,11 @@ export default function NewTransactionPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">{t("unit")}</Label>
               <Select value={form.unitId} onValueChange={(v) => {
+                if (!v) return;
                 const selected = units.find((u) => u.id === v);
                 setForm({...form, unitId: v, totalPrice: selected ? String(selected.price) : form.totalPrice});
               }}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select unit">{units.find((u) => u.id === form.unitId)?.unit_number || "Select unit"}</SelectValue></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select unit" /></SelectTrigger>
                 <SelectContent>
                   {units.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.unit_number} — AED {Number(u.price).toLocaleString()}</SelectItem>
@@ -154,8 +155,8 @@ export default function NewTransactionPage() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">{t("buyer")}</Label>
-              <Select value={form.buyerId} onValueChange={(v) => setForm({...form, buyerId: v})}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select buyer">{buyers.find((b) => b.id === form.buyerId)?.full_name || "Select buyer"}</SelectValue></SelectTrigger>
+              <Select value={form.buyerId} onValueChange={(v) => v && setForm({...form, buyerId: v})}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select buyer" /></SelectTrigger>
                 <SelectContent>
                   {buyers.map((b) => (
                     <SelectItem key={b.id} value={b.id}>{b.full_name} — {b.phone}</SelectItem>
@@ -167,8 +168,8 @@ export default function NewTransactionPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Payment Plan</Label>
-                <Select value={form.paymentPlanId} onValueChange={(v) => setForm({...form, paymentPlanId: v})}>
-                  <SelectTrigger className="h-11"><SelectValue placeholder="Select plan">{paymentPlans.find((p) => p.id === form.paymentPlanId)?.name || "Select plan"}</SelectValue></SelectTrigger>
+                <Select value={form.paymentPlanId} onValueChange={(v) => v && setForm({...form, paymentPlanId: v})}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Select plan" /></SelectTrigger>
                   <SelectContent>
                     {paymentPlans.map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -178,8 +179,8 @@ export default function NewTransactionPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Agent</Label>
-                <Select value={form.agentId} onValueChange={(v) => setForm({...form, agentId: v})}>
-                  <SelectTrigger className="h-11"><SelectValue placeholder="Optional">{agents.find((a) => a.id === form.agentId)?.full_name || "Optional"}</SelectValue></SelectTrigger>
+                <Select value={form.agentId} onValueChange={(v) => setForm({...form, agentId: v || ""})}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Optional" /></SelectTrigger>
                   <SelectContent>
                     {agents.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>

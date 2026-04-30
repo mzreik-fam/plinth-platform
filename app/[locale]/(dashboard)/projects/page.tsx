@@ -46,7 +46,7 @@ interface Project {
 
 interface EditForm {
   name: string;
-  areaId: string;
+  areaId: string | null;
   status: string;
 }
 
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
     setEditProject(project);
     setEditForm({
       name: project.name,
-      areaId: project.area_id || "",
+      areaId: project.area_id ?? null,
       status: project.status,
     });
   }
@@ -318,7 +318,7 @@ export default function ProjectsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Area</Label>
-              <Select value={editForm.areaId || ""} onValueChange={(v) => setEditForm({...editForm, areaId: v || ""})}>
+              <Select value={editForm.areaId ?? ""} onValueChange={(v) => setEditForm({...editForm, areaId: v || null})}>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select an area">{areas.find((a) => a.id === editForm.areaId)?.name || "None"}</SelectValue>
                 </SelectTrigger>
@@ -332,7 +332,7 @@ export default function ProjectsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Status</Label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm({...editForm, status: v})}>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm({...editForm, status: v || ""})}>
                 <SelectTrigger className="h-11"><SelectValue>{editForm.status === "active" ? "Active" : "Inactive"}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>

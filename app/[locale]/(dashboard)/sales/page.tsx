@@ -12,6 +12,8 @@ import {Plus, Eye, ShoppingCart, Loader2, Search} from "lucide-react";
 
 
 
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
 interface Transaction {
   id: string;
   buyer_name: string;
@@ -24,10 +26,10 @@ interface Transaction {
   eoi_amount?: number;
 }
 
-const statusColors: Record<string, string> = {
-  eoi: "warning",
+const statusColors: Record<string, BadgeVariant> = {
+  eoi: "secondary",
   booking_pending: "secondary",
-  confirmed: "success",
+  confirmed: "default",
   cancelled: "destructive",
   terminated: "destructive",
 };
@@ -150,7 +152,7 @@ export default function SalesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <p className="font-semibold text-base truncate">{tx.buyer_name}</p>
-                        <Badge variant={(statusColors[tx.status] || "secondary") as "default" | "secondary" | "destructive" | "outline" | "warning" | "success"} className="shrink-0">
+                        <Badge variant={(statusColors[tx.status] || "secondary")} className="shrink-0">
                           {t(tx.status)}
                         </Badge>
                       </div>

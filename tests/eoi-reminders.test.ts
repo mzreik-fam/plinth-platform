@@ -407,11 +407,11 @@ describe('EOI Reminder Integration', () => {
     
     // Verify 72h reminder update
     assert.ok(capturedQueries[0].sql.includes('UPDATE transactions'), 'step 1: update 72h reminder');
-    assert.ok(capturedQueries[0].values[0].includes('72h'), 'step 1: reminders_sent includes 72h');
+    assert.ok(String(capturedQueries[0].values[0]).includes('72h'), 'step 1: reminders_sent includes 72h');
     
     // Verify 48h reminder update
     assert.ok(capturedQueries[1].sql.includes('UPDATE transactions'), 'step 2: update 48h reminder');
-    assert.ok(capturedQueries[1].values[0].includes('48h'), 'step 2: reminders_sent includes 48h');
+    assert.ok(String(capturedQueries[1].values[0]).includes('48h'), 'step 2: reminders_sent includes 48h');
     
     // Verify cancellation
     assert.ok(capturedQueries[2].sql.includes('UPDATE transactions'), 'step 3: cancel transaction');

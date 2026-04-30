@@ -77,6 +77,11 @@ interface Handover {
   buyer_name: string;
   unit_number: string;
   project_name: string;
+  buyer_email?: string;
+  buyer_phone?: string;
+  total_price?: number;
+  bcc_uploaded_at?: string;
+  handover_payment_paid_at?: string;
 }
 
 interface Ticket {
@@ -122,7 +127,7 @@ export default function HandoverDetailPage() {
   }
 
   async function createTicket() {
-    if (!newTicket.title) return;
+    if (!newTicket.title || !handover) return;
     const res = await fetch("/api/snagging-tickets", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -139,7 +144,7 @@ export default function HandoverDetailPage() {
       setTickets([data.ticket, ...tickets]);
       setNewTicket({title: "", description: "", severity: "minor"});
       // Update handover status to snagging if not already
-      if (handover.status !== "snagging" && handover.status !== "ready_for_handover" && handover.status !== "completed") {
+      if (handover && handover.status !== "snagging" && handover.status !== "ready_for_handover" && handover.status !== "completed") {
         updateHandover({status: "snagging"});
       }
     }
@@ -203,9 +208,9 @@ export default function HandoverDetailPage() {
             <InfoRow label="Unit" value={handover.unit_number} />
             <InfoRow label="Project" value={handover.project_name} />
             <InfoRow label="Buyer" value={handover.buyer_name} />
-            <InfoRow label="Email" value={handover.buyer_email} />
-            <InfoRow label="Phone" value={handover.buyer_phone} />
-            <InfoRow label="Total Price" value={`AED ${Number(handover.total_price).toLocaleString()}`} />
+            <InfoRow label="Email" value={handover.buyer_email || "—"} />
+            <InfoRow label="Phone" value={handover.buyer_phone || "—"} />
+            <InfoRow label="Total Price" value={`AED ${Number(handover.total_price || 0).toLocaleString()}`} />
           </CardContent>
         </Card>
 

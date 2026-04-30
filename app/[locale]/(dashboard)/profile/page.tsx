@@ -44,6 +44,7 @@ export default function ProfilePage() {
 
   async function updateProfile(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     setSaving(true);
     const res = await fetch(`/api/users/${user.id}`, {
       method: "PATCH",

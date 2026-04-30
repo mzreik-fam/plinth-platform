@@ -251,8 +251,8 @@ export default function UsersPage() {
             </div>
             <div className="space-y-2">
               <Label>{t("role")}</Label>
-              <Select value={editForm.role} onValueChange={(v) => setEditForm({...editForm, role: v})}>
-                <SelectTrigger><SelectValue>{roleOptions.find((r) => r.value === editForm.role)?.label}</SelectValue></SelectTrigger>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({...editForm, role: v || ""})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {roleOptions.map((r) => (
                     <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>

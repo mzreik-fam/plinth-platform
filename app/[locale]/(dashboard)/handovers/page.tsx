@@ -45,6 +45,9 @@ interface Handover {
   buyer_name: string;
   status: string;
   scheduled_date?: string;
+  buyer_phone?: string;
+  bcc_uploaded_at?: string;
+  inspection_date?: string;
 }
 
 export default function HandoversPage() {

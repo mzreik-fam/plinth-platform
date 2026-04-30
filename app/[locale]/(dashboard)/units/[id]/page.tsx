@@ -44,6 +44,20 @@ interface UnitData {
   documents?: FileItem[];
 }
 
+interface FormData {
+  unit_number?: string;
+  unit_type?: string;
+  project_name?: string;
+  price?: number;
+  area_sqft?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  features?: string;
+  status?: string;
+  images?: FileItem[];
+  documents?: FileItem[];
+}
+
 export default function UnitDetailPage() {
   const t = useTranslations("units");
   const tc = useTranslations("common");
@@ -53,7 +67,7 @@ export default function UnitDetailPage() {
 
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState<Partial<UnitData>>({});
+  const [form, setForm] = useState<FormData>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -76,7 +90,7 @@ export default function UnitDetailPage() {
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !unit) return;
     setUploadingImage(true);
     try {
       const data = await uploadFile(file, "units/images");
@@ -98,7 +112,7 @@ export default function UnitDetailPage() {
 
   async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !unit) return;
     setUploadingDoc(true);
     try {
       const data = await uploadFile(file, "units/documents");
@@ -119,6 +133,7 @@ export default function UnitDetailPage() {
   }
 
   async function deleteFile(key: string, type: "images" | "documents") {
+    if (!unit) return;
     try {
       await fetch("/api/upload", {method: "DELETE", headers: {"Content-Type": "application/json"}, body: JSON.stringify({key})});
       const updated = (unit[type] || []).filter((f: FileItem) => f.key !== key);
@@ -226,9 +241,9 @@ export default function UnitDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t("type")}</Label>
-                <Select value={form.unit_type} onValueChange={(v) => setForm({...form, unit_type: v})}>
+                <Select value={form.unit_type} onValueChange={(v) => setForm({...form, unit_type: v || ""})}>
                   <SelectTrigger>
-                    <SelectValue>{form.unit_type ? t(form.unit_type) : ''}</SelectValue>
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="villa">{t("villa")}</SelectItem>
@@ -240,21 +255,21 @@ export default function UnitDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("bedrooms")}</Label>
-                  <Input type="number" value={form.bedrooms || ""} onChange={(e) => setForm({...form, bedrooms: e.target.value})} />
+                  <Input type="number" value={form.bedrooms ?? ""} onChange={(e) => setForm({...form, bedrooms: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("bathrooms")}</Label>
-                  <Input type="number" value={form.bathrooms || ""} onChange={(e) => setForm({...form, bathrooms: e.target.value})} />
+                  <Input type="number" value={form.bathrooms ?? ""} onChange={(e) => setForm({...form, bathrooms: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("area")}</Label>
-                  <Input type="number" value={form.area_sqft || ""} onChange={(e) => setForm({...form, area_sqft: e.target.value})} />
+                  <Input type="number" value={form.area_sqft ?? ""} onChange={(e) => setForm({...form, area_sqft: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("price")}</Label>
-                  <Input type="number" value={form.price || ""} onChange={(e) => setForm({...form, price: e.target.value})} />
+                  <Input type="number" value={form.price ?? ""} onChange={(e) => setForm({...form, price: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -263,8 +278,8 @@ export default function UnitDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({...form, status: v})}>
-                  <SelectTrigger><SelectValue>{t(form.status)}</SelectValue></SelectTrigger>
+                <Select value={form.status} onValueChange={(v) => setForm({...form, status: v || ""})}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">{t("draft")}</SelectItem>
                     <SelectItem value="available">{t("available")}</SelectItem>

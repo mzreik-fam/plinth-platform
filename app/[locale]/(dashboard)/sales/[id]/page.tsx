@@ -40,10 +40,12 @@ const paymentMethodLabels: Record<string, string> = {
   card: "Card",
 };
 
-const statusColors: Record<string, string> = {
-  eoi: "warning",
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+const statusColors: Record<string, BadgeVariant> = {
+  eoi: "secondary",
   booking_pending: "secondary",
-  confirmed: "success",
+  confirmed: "default",
   cancelled: "destructive",
   terminated: "destructive",
 };
@@ -222,10 +224,9 @@ export default function TransactionDetailPage() {
     setActionNotes("");
   }
 
-  // P0-6: Start handover with BCC validation
   async function startHandover(e: React.FormEvent) {
     e.preventDefault();
-    if (!bccDocumentUrl.trim()) {
+    if (!bccDocumentUrl.trim() || !transaction) {
       toast.error("BCC document URL is required");
       return;
     }
@@ -300,7 +301,7 @@ export default function TransactionDetailPage() {
           </Button>
         </Link>
         <h1 className="text-2xl font-bold">{transaction.buyer_name}</h1>
-        <Badge variant={(statusColors[transaction.status] || "secondary") as "default" | "secondary" | "destructive" | "outline" | "warning" | "success"}>
+        <Badge variant={statusColors[transaction.status] || "secondary"}>
           {t(transaction.status)}
         </Badge>
       </div>
@@ -660,7 +661,7 @@ export default function TransactionDetailPage() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{paymentMethodLabels[p.payment_method] || p.payment_method} · {p.reference_number || "—"}</p>
-                {p.status === 'confirmed' && p.confirmed_by_name && (
+                {p.status === 'confirmed' && p.confirmed_by_name && p.confirmed_at && (
                   <p className="text-xs text-muted-foreground">
                     Confirmed by {p.confirmed_by_name} on {new Date(p.confirmed_at).toLocaleDateString()}
                   </p>

@@ -154,7 +154,7 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
       RETURNING *
     `;
 
-    const result: {id: string; [key: string]: unknown}[] = await sql.query(query, values);
+    const result = await sql.query(query, values) as Array<{id: string; [key: string]: unknown}>;
 
     if (result.length === 0) {
       return NextResponse.json({error: 'Transaction not found'}, {status: 404});
