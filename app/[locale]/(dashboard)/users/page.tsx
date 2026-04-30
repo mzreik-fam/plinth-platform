@@ -4,12 +4,33 @@ import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Plus, UserCircle, Loader2, Trash2} from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Label} from "@/components/ui/label";
+import {Plus, UserCircle, Loader2, Pencil, Trash2, Power} from "lucide-react";
 import {toast} from "sonner";
-
-
 
 export default function UsersPage() {
   const t = useTranslations("users");
@@ -17,6 +38,10 @@ export default function UsersPage() {
   const locale = useLocale();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [editUser, setEditUser] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -40,24 +65,69 @@ export default function UsersPage() {
       const res = await fetch(`/api/users/${id}`, {method: "DELETE"});
       if (!res.ok) throw new Error("Failed to revoke");
       setUsers((prev) => prev.filter((u) => u.id !== id));
+      toast.success("Invitation revoked");
     } catch {
       toast.error(t("revokeError"));
     }
   }
 
+  async function toggleActive(user: any) {
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({isActive: !user.is_active}),
+      });
+      if (res.ok) {
+        toast.success(user.is_active ? "User deactivated" : "User activated");
+        fetchUsers();
+      } else {
+        toast.error("Failed to update status");
+      }
+    } catch {
+      toast.error("Failed to update status");
+    }
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editUser) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/users/${editUser.id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        toast.success("User updated");
+        setEditUser(null);
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || tc("error"));
+      }
+    } catch {
+      toast.error(tc("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openEdit(user: any) {
+    setEditUser(user);
+    setEditForm({
+      fullName: user.full_name,
+      email: user.email,
+      role: user.role,
+    });
+  }
+
   function getStatusBadge(user: any) {
     if (user.invite_token) {
-      return (
-        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
-          {t("pending")}
-        </Badge>
-      );
+      return <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">{t("pending")}</Badge>;
     }
-    return (
-      <Badge variant={user.is_active ? "default" : "secondary"} className="text-xs">
-        {user.is_active ? t("active") : t("inactive")}
-      </Badge>
-    );
+    return <Badge variant={user.is_active ? "default" : "secondary"} className="text-xs">{user.is_active ? t("active") : t("inactive")}</Badge>;
   }
 
   return (
@@ -94,57 +164,87 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {users.map((user: any) => (
-            <Card key={user.id} className="group hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">
-                      {user.full_name?.charAt(0)?.toUpperCase() || "?"}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-base truncate">{user.full_name}</p>
-                    <p className="text-sm text-muted-foreground">@{user.username}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("email")}</span>
-                    <span className="truncate max-w-[180px]">{user.email}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("role")}</span>
-                    <span className="capitalize font-medium">{user.role.replace(/_/g, " ")}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t">
-                  {getStatusBadge(user)}
-                  <div className="flex items-center gap-2">
-                    {user.invite_token && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => revokeUser(user.id)}
-                        title={t("revokeInvitation")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("fullName")}</TableHead>
+                  <TableHead>{t("username")}</TableHead>
+                  <TableHead>{t("email")}</TableHead>
+                  <TableHead>{t("role")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user: any) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.full_name}</TableCell>
+                    <TableCell>@{user.username}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="capitalize">{user.role.replace(/_/g, " ")}</TableCell>
+                    <TableCell>{getStatusBadge(user)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(user)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {!user.invite_token && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(user)} title={user.is_active ? "Deactivate" : "Activate"}>
+                            <Power className={`h-4 w-4 ${user.is_active ? "text-orange-500" : "text-green-500"}`} />
+                          </Button>
+                        )}
+                        {user.invite_token && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => revokeUser(user.id)} title={t("revokeInvitation")}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
+
+      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>{t("fullName")}</Label>
+              <Input value={editForm.fullName || ""} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("email")}</Label>
+              <Input type="email" value={editForm.email || ""} onChange={(e) => setEditForm({...editForm, email: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("role")}</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({...editForm, role: v})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  <SelectItem value="project_manager">Project Manager</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="internal_agent">Internal Agent</SelectItem>
+                  <SelectItem value="agency_admin">Agency Admin</SelectItem>
+                  <SelectItem value="agency_agent">Agency Agent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}</Button>
+              <Button type="button" variant="outline" onClick={() => setEditUser(null)}>{tc("cancel")}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

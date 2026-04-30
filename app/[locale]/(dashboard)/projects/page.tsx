@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {Plus, FolderKanban, Loader2, MapPin, Building2} from "lucide-react";
+import {Plus, FolderKanban, Loader2, MapPin, Building2, Pencil, Trash2} from "lucide-react";
+import {toast} from "sonner";
 
 
 
@@ -57,6 +58,22 @@ export default function ProjectsPage() {
       fetchProjects();
     }
     setSaving(false);
+  }
+
+  async function deleteProject(id: string) {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    try {
+      const res = await fetch(`/api/projects/${id}`, {method: "DELETE"});
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete project");
+        return;
+      }
+      fetchProjects();
+      toast.success("Project deleted");
+    } catch {
+      toast.error("Failed to delete project");
+    }
   }
 
   return (
@@ -158,11 +175,19 @@ export default function ProjectsPage() {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <Link href={`/${locale}/projects/${project.id}`}>
+                    <Button variant="ghost" size="sm" className="gap-1">
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    onClick={() => deleteProject(project.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>

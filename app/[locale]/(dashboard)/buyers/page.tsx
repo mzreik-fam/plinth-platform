@@ -7,7 +7,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Plus, Users, Loader2, Mail, Phone, Globe, Search, ShoppingCart} from "lucide-react";
+import {Plus, Users, Loader2, Mail, Phone, Globe, Search, ShoppingCart, Pencil, Trash2} from "lucide-react";
 
 
 
@@ -43,6 +43,22 @@ export default function BuyersPage() {
       // ignore
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deleteBuyer(id: string) {
+    if (!confirm("Are you sure you want to delete this buyer?")) return;
+    try {
+      const res = await fetch(`/api/buyers/${id}`, {method: "DELETE"});
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete buyer");
+        return;
+      }
+      fetchBuyers(offset);
+      toast.success("Buyer deleted");
+    } catch {
+      toast.error("Failed to delete buyer");
     }
   }
 
@@ -138,6 +154,21 @@ export default function BuyersPage() {
                         View Transactions
                       </Button>
                     </Link>
+                    <div className="flex items-center gap-1">
+                      <Link href={`/${locale}/buyers/${buyer.id}`}>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        onClick={() => deleteBuyer(buyer.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
