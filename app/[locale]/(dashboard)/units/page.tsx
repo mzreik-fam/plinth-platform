@@ -129,7 +129,7 @@ export default function UnitsPage() {
         </Select>
         <Select value={projectFilter} onValueChange={(v) => setProjectFilter(v || "")}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All projects" />
+            <SelectValue placeholder="All projects">{projects.find((p: any) => p.id === projectFilter)?.name || "All projects"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">All projects</SelectItem>

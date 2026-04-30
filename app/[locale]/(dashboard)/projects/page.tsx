@@ -187,7 +187,7 @@ export default function ProjectsPage() {
                 <Label className="text-sm font-medium">Area</Label>
                 <Select value={form.areaId} onValueChange={(v) => setForm({...form, areaId: v || ""})}>
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select an area" />
+                    <SelectValue placeholder="Select an area">{areas.find((a: any) => a.id === form.areaId)?.name || "Select an area"}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>
@@ -211,7 +211,7 @@ export default function ProjectsPage() {
       <div className="flex items-center gap-3">
         <Select value={filterAreaId} onValueChange={(v) => setFilterAreaId(v || "all")}>
           <SelectTrigger className="w-[240px] h-10">
-            <SelectValue placeholder="Filter by area" />
+            <SelectValue placeholder="Filter by area">{areas.find((a: any) => a.id === filterAreaId)?.name || "All areas"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All areas</SelectItem>
@@ -303,7 +303,7 @@ export default function ProjectsPage() {
               <Label className="text-sm font-medium">Area</Label>
               <Select value={editForm.areaId || ""} onValueChange={(v) => setEditForm({...editForm, areaId: v || ""})}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select an area" />
+                  <SelectValue placeholder="Select an area">{areas.find((a: any) => a.id === editForm.areaId)?.name || "None"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">None</SelectItem>

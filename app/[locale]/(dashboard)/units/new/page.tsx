@@ -99,7 +99,7 @@ export default function NewUnitPage() {
               ) : (
                 <Select value={form.projectId} onValueChange={(v) => setForm({...form, projectId: v || ""})}>
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select project" />
+                    <SelectValue placeholder="Select project">{projects.find((p: any) => p.id === form.projectId)?.name || "Select project"}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {projects.map((p: any) => (
