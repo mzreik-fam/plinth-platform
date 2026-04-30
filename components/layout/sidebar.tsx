@@ -171,19 +171,21 @@ export function Sidebar() {
 
           {/* User Card */}
           {user && (
-            <div className="p-3 rounded-xl bg-muted/60 border">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-primary">
-                    {user.full_name?.charAt(0)?.toUpperCase() || "U"}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{user.full_name}</p>
-                  <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace(/_/g, " ")}</p>
+            <Link href={`/${locale}/profile`} className="block">
+              <div className="p-3 rounded-xl bg-muted/60 border hover:bg-muted/80 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold text-primary">
+                      {user.full_name?.charAt(0)?.toUpperCase() || "U"}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{user.full_name}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace(/_/g, " ")}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           )}
 
           <Button
