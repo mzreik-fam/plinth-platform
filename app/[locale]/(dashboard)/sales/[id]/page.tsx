@@ -5,6 +5,7 @@ import {useTranslations, useLocale} from "next-intl";
 import {useParams} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -31,7 +32,7 @@ export default function TransactionDetailPage() {
   const [transaction, setTransaction] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({amount: "", paymentMethod: "bank_transfer", referenceNumber: ""});
+  const [paymentForm, setPaymentForm] = useState({amount: "", paymentMethod: "bank_transfer", referenceNumber: "", notes: ""});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -70,12 +71,16 @@ export default function TransactionDetailPage() {
         amount: Number(paymentForm.amount),
         payment_method: paymentForm.paymentMethod,
         reference_number: paymentForm.referenceNumber,
+        notes: paymentForm.notes,
       }),
     });
     if (res.ok) {
       setShowPaymentForm(false);
-      setPaymentForm({amount: "", paymentMethod: "bank_transfer", referenceNumber: ""});
+      setPaymentForm({amount: "", paymentMethod: "bank_transfer", referenceNumber: "", notes: ""});
       fetchTransaction();
+      toast.success("Payment recorded");
+    } else {
+      toast.error("Failed to record payment");
     }
   }
 
@@ -239,6 +244,10 @@ export default function TransactionDetailPage() {
               <div className="space-y-2">
                 <Label>{t("referenceNumber")}</Label>
                 <Input value={paymentForm.referenceNumber} onChange={(e) => setPaymentForm({...paymentForm, referenceNumber: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea value={paymentForm.notes || ""} onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})} rows={2} />
               </div>
               <div className="flex gap-2">
                 <Button type="submit">{tc("save")}</Button>

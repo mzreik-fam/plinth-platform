@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Find user by username or email (bypass RLS for auth)
     const users = await sql`
-      SELECT u.id, u.tenant_id, u.email, u.username, u.password_hash, u.full_name, u.role, u.is_active, t.slug as tenant_slug
+      SELECT u.id, u.tenant_id, u.email, u.username, u.password_hash, u.full_name, u.role, u.is_active, u.invite_token, t.slug as tenant_slug
       FROM users u
       JOIN tenants t ON t.id = u.tenant_id
       WHERE (u.username = ${usernameOrEmail} OR u.email = ${usernameOrEmail})
@@ -28,6 +28,10 @@ export async function POST(request: NextRequest) {
     }
 
     const user = users[0];
+
+    if (user.invite_token) {
+      return NextResponse.json({error: 'Please accept your invitation before logging in'}, {status: 401});
+    }
 
     if (!user.is_active) {
       return NextResponse.json({error: 'Account inactive'}, {status: 401});

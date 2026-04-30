@@ -99,7 +99,11 @@
     "role": "الدور",
     "status": "الحالة",
     "active": "نشط",
-    "inactive": "غير نشط"
+    "inactive": "غير نشط",
+    "pending": "معلق",
+    "revokeInvitation": "إلغاء الدعوة",
+    "revokeConfirm": "هل أنت متأكد أنك تريد إلغاء هذه الدعوة؟",
+    "revokeError": "فشل في إلغاء الدعوة."
   },
   "common": {
     "save": "حفظ",

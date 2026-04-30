@@ -6,7 +6,7 @@ import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Plus, UserCircle, Loader2} from "lucide-react";
+import {Plus, UserCircle, Loader2, Trash2} from "lucide-react";
 
 export default function UsersPage() {
   const t = useTranslations("users");
@@ -29,6 +29,32 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function revokeUser(id: string) {
+    if (!confirm(t("revokeConfirm"))) return;
+    try {
+      const res = await fetch(`/api/users/${id}`, {method: "DELETE"});
+      if (!res.ok) throw new Error("Failed to revoke");
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch {
+      alert(t("revokeError"));
+    }
+  }
+
+  function getStatusBadge(user: any) {
+    if (user.invite_token) {
+      return (
+        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+          {t("pending")}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant={user.is_active ? "default" : "secondary"} className="text-xs">
+        {user.is_active ? t("active") : t("inactive")}
+      </Badge>
+    );
   }
 
   return (
@@ -93,12 +119,23 @@ export default function UsersPage() {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t">
-                  <Badge variant={user.is_active ? "default" : "secondary"} className="text-xs">
-                    {user.is_active ? t("active") : t("inactive")}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </span>
+                  {getStatusBadge(user)}
+                  <div className="flex items-center gap-2">
+                    {user.invite_token && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => revokeUser(user.id)}
+                        title={t("revokeInvitation")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

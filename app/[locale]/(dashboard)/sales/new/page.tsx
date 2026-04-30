@@ -5,6 +5,7 @@ import {useTranslations, useLocale} from "next-intl";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
@@ -173,7 +174,7 @@ export default function NewTransactionPage() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">Notes</Label>
-              <Input value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} className="h-11" />
+              <Textarea value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} rows={3} />
             </div>
 
             <div className="flex gap-3 pt-2">
