@@ -101,7 +101,7 @@ export default function AuditLogsPage() {
                         {log.details || "—"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {log.performed_by?.slice(0, 8) || "—"}
+                        {log.user_id?.slice(0, 8) || "—"}
                       </TableCell>
                     </TableRow>
                   ))}

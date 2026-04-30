@@ -14,6 +14,9 @@
     "handovers": "التسليم",
     "terminations": "الإنهاء",
     "approvals": "الموافقات",
+    "pending_payments": "المدفوعات المعلقة",
+    "payment_plans": "خطط الدفع",
+    "audit_logs": "سجلات التدقيق",
     "settings": "الإعدادات",
     "logout": "تسجيل الخروج"
   },

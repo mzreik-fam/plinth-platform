@@ -14,6 +14,7 @@
     "handovers": "Handovers",
     "terminations": "Terminations",
     "approvals": "Approvals",
+    "pending_payments": "Pending Payments",
     "payment_plans": "Payment Plans",
     "audit_logs": "Audit Logs",
     "settings": "Settings",

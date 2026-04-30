@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Insert payment as 'pending' - requires admin review before confirmation
     const result = await sql`
-      INSERT INTO payments (tenant_id, transaction_id, amount, payment_method, reference_number, status, proof_document_id)
+      INSERT INTO payments (tenant_id, transaction_id, amount, payment_method, reference_number, status, proof_url)
       VALUES (${auth.tenantId}, ${transaction_id}, ${amount}, ${payment_method}, ${reference_number || null}, 'pending', ${proof_document_id || null})
       RETURNING *
     `;
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         JOIN transactions t ON p.transaction_id = t.id
         JOIN units u ON t.unit_id = u.id
         JOIN buyers b ON t.buyer_id = b.id
-        LEFT JOIN documents d ON p.proof_document_id = d.id
+        LEFT JOIN documents d ON p.proof_url = d.url
         WHERE p.tenant_id = ${auth.tenantId} AND p.status = ${status}
         ORDER BY p.created_at DESC
       `;
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         JOIN transactions t ON p.transaction_id = t.id
         JOIN units u ON t.unit_id = u.id
         JOIN buyers b ON t.buyer_id = b.id
-        LEFT JOIN documents d ON p.proof_document_id = d.id
+        LEFT JOIN documents d ON p.proof_url = d.url
         WHERE p.tenant_id = ${auth.tenantId}
         ORDER BY p.created_at DESC
       `;
