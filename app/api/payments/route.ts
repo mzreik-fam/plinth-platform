@@ -63,12 +63,12 @@ export async function GET(request: NextRequest) {
           p.*,
           u.unit_number,
           b.full_name as buyer_name,
-          d.url as proof_document_url
+          d.file_url as proof_document_url
         FROM payments p
         JOIN transactions t ON p.transaction_id = t.id
         JOIN units u ON t.unit_id = u.id
         JOIN buyers b ON t.buyer_id = b.id
-        LEFT JOIN documents d ON p.proof_url = d.url
+        LEFT JOIN documents d ON p.proof_url = d.file_url
         WHERE p.tenant_id = ${auth.tenantId} AND p.status = ${status}
         ORDER BY p.created_at DESC
       `;
@@ -78,12 +78,12 @@ export async function GET(request: NextRequest) {
           p.*,
           u.unit_number,
           b.full_name as buyer_name,
-          d.url as proof_document_url
+          d.file_url as proof_document_url
         FROM payments p
         JOIN transactions t ON p.transaction_id = t.id
         JOIN units u ON t.unit_id = u.id
         JOIN buyers b ON t.buyer_id = b.id
-        LEFT JOIN documents d ON p.proof_url = d.url
+        LEFT JOIN documents d ON p.proof_url = d.file_url
         WHERE p.tenant_id = ${auth.tenantId}
         ORDER BY p.created_at DESC
       `;
