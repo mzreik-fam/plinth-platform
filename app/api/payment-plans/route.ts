@@ -13,20 +13,29 @@ async function getAuthUser() {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-  const paymentPlans = await sql`
-    SELECT id, name, description, milestones, is_default
-    FROM payment_plans
-    ORDER BY created_at DESC
-    LIMIT 200
-  `;
+  try {
+    const body = await request.json();
+    const {name, description, milestones} = body;
 
-  return NextResponse.json({paymentPlans}, {
-    headers: {'Cache-Control': 'private, max-age=300'},
-  });
+    if (!name || !milestones || !Array.isArray(milestones)) {
+      return NextResponse.json({error: 'Name and milestones array required'}, {status: 400});
+    }
+
+    const result = await sql`
+      INSERT INTO payment_plans (tenant_id, name, description, milestones, is_default)
+      VALUES (${auth.tenantId}, ${name}, ${description || null}, ${JSON.stringify(milestones)}, false)
+      RETURNING *
+    `;
+
+    return NextResponse.json({paymentPlan: result[0]}, {status: 201});
+  } catch (error) {
+    console.error('Create payment plan error:', error);
+    return NextResponse.json({error: 'Failed to create payment plan'}, {status: 500});
+  }
 }

@@ -22,6 +22,7 @@ import {
   Bell,
   ChevronRight,
   FolderKanban,
+  CalendarDays,
 } from "lucide-react";
 
 const mainNavItems = [
@@ -30,6 +31,7 @@ const mainNavItems = [
   {key: "units", href: "/units", icon: Building2},
   {key: "sales", href: "/sales", icon: ShoppingCart},
   {key: "buyers", href: "/buyers", icon: Users},
+  {key: "payment_plans", href: "/payment-plans", icon: CalendarDays},
 ];
 
 const processNavItems = [
