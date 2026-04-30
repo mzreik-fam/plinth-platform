@@ -6,6 +6,17 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Building2, CalendarDays} from "lucide-react";
 
+const paymentMethodLabels: Record<string, string> = {
+  bank_transfer: "Bank Transfer",
+  cheque: "Cheque",
+  cash: "Cash",
+  card: "Card",
+};
+
+function capitalize(s: string) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export default function PortalPage() {
   const params = useParams();
   const token = params.token as string;
@@ -136,9 +147,9 @@ export default function PortalPage() {
               <div key={p.id} className="flex justify-between items-center py-2 border-b last:border-0">
                 <div>
                   <p className="text-sm font-medium">AED {Number(p.amount).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">{p.payment_method} · {new Date(p.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-muted-foreground">{paymentMethodLabels[p.payment_method] || p.payment_method} · {new Date(p.created_at).toLocaleDateString()}</p>
                 </div>
-                <Badge variant="outline">{p.status}</Badge>
+                <Badge variant="outline">{capitalize(p.status)}</Badge>
               </div>
             ))}
           </CardContent>

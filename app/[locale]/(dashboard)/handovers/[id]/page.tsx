@@ -44,6 +44,19 @@ const statusLabels: Record<string, string> = {
   completed: "Completed",
 };
 
+const severityLabels: Record<string, string> = {
+  minor: "Minor",
+  major: "Major",
+  critical: "Critical",
+};
+
+const ticketStatusLabels: Record<string, string> = {
+  open: "Open",
+  in_progress: "In Progress",
+  resolved: "Resolved",
+  closed: "Closed",
+};
+
 const statusSteps = [
   "pending_bcc",
   "payment_due",
@@ -268,7 +281,7 @@ export default function HandoverDetailPage() {
                 <div className="space-y-2">
                   <Label>Severity</Label>
                   <Select value={newTicket.severity} onValueChange={(v) => setNewTicket({...newTicket, severity: v || "minor"})}>
-                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue>{severityLabels[newTicket.severity]}</SelectValue></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="minor">Minor</SelectItem>
                       <SelectItem value="major">Major</SelectItem>
@@ -300,12 +313,12 @@ export default function HandoverDetailPage() {
                     <TableCell>{t.title}</TableCell>
                     <TableCell>
                       <Badge variant={t.severity === "critical" ? "destructive" : t.severity === "major" ? "default" : "secondary"}>
-                        {t.severity}
+                        {severityLabels[t.severity] || t.severity}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={t.status === "closed" ? "outline" : t.status === "resolved" ? "secondary" : "default"}>
-                        {t.status}
+                        {ticketStatusLabels[t.status] || t.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

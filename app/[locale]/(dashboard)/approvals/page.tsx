@@ -205,7 +205,7 @@ export default function ApprovalsPage() {
                     <TableCell>{a.project_name}</TableCell>
                     <TableCell>
                       <Badge variant={a.status === "approved" ? "outline" : "destructive"}>
-                        {a.status}
+                        {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell>{a.reviewed_by_name || "-"}</TableCell>

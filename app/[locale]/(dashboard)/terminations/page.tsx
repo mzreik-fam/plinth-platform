@@ -78,7 +78,7 @@ export default function TerminationsPage() {
                     <TableCell>{c.buyer_name}</TableCell>
                     <TableCell>
                       <Badge variant={c.status === "active" ? "destructive" : c.status === "completed" ? "outline" : "secondary"}>
-                        {c.status}
+                        {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell>Step {c.current_step}/4</TableCell>

@@ -143,7 +143,7 @@ export default function TransactionDetailPage() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("unit")}</span>
             <Link href={`/${locale}/units/${transaction.unit_id}`} className="font-medium hover:underline">
-              {transaction.unit_number} · {transaction.unit_type}
+              {transaction.unit_number} · {transaction.unit_type ? transaction.unit_type.charAt(0).toUpperCase() + transaction.unit_type.slice(1) : ''}
             </Link>
           </div>
           <div className="flex justify-between text-sm">
@@ -318,9 +318,9 @@ export default function TransactionDetailPage() {
             <div key={p.id} className="flex justify-between items-center py-2 border-b last:border-0">
               <div>
                 <p className="text-sm font-medium">AED {Number(p.amount).toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">{p.payment_method} · {p.reference_number || "—"}</p>
+                <p className="text-xs text-muted-foreground">{paymentMethodLabels[p.payment_method] || p.payment_method} · {p.reference_number || "—"}</p>
               </div>
-              <Badge variant="outline">{p.status}</Badge>
+              <Badge variant="outline">{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</Badge>
             </div>
           ))}
         </CardContent>

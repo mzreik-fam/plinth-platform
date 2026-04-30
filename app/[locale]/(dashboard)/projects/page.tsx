@@ -268,7 +268,7 @@ export default function ProjectsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={project.status === "active" ? "default" : "secondary"} className="text-xs">
-                        {project.status}
+                        {project.status === "active" ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -316,7 +316,7 @@ export default function ProjectsPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">Status</Label>
               <Select value={editForm.status} onValueChange={(v) => setEditForm({...editForm, status: v})}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue>{editForm.status === "active" ? "Active" : "Inactive"}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>

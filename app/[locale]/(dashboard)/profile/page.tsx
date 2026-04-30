@@ -10,6 +10,15 @@ import {Badge} from "@/components/ui/badge";
 import {UserCircle, Loader2, Mail, KeyRound} from "lucide-react";
 import {toast} from "sonner";
 
+const roleOptions: Record<string, string> = {
+  super_admin: "Super Admin",
+  project_manager: "Project Manager",
+  admin: "Admin",
+  internal_agent: "Internal Agent",
+  agency_admin: "Agency Admin",
+  agency_agent: "Agency Agent",
+};
+
 export default function ProfilePage() {
   const locale = useLocale();
   const [user, setUser] = useState<any>(null);
@@ -104,7 +113,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
-              <Badge variant="secondary" className="capitalize">{user.role?.replace(/_/g, " ")}</Badge>
+              <Badge variant="secondary">{roleOptions[user.role] || user.role}</Badge>
             </div>
             <Button type="submit" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}

@@ -19,6 +19,25 @@ import {FileText, TrendingUp, AlertTriangle, CheckCircle2, Clock} from "lucide-r
 
 
 
+const transactionStatusLabels: Record<string, string> = {
+  eoi: "EOI",
+  booking_pending: "Booking Pending",
+  confirmed: "Confirmed",
+  cancelled: "Cancelled",
+  terminated: "Terminated",
+};
+
+const paymentMethodLabels: Record<string, string> = {
+  bank_transfer: "Bank Transfer",
+  cheque: "Cheque",
+  cash: "Cash",
+  card: "Card",
+};
+
+function capitalize(s: string) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export default function FinancialStatementPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
@@ -75,7 +94,7 @@ export default function FinancialStatementPage() {
           </p>
         </div>
         <Badge variant="outline">
-          {transaction.status}
+          {transactionStatusLabels[transaction.status] || capitalize(transaction.status)}
         </Badge>
       </div>
 
@@ -189,11 +208,11 @@ export default function FinancialStatementPage() {
                   <TableRow key={p.id}>
                     <TableCell>{new Date(p.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="font-medium">AED {Number(p.amount).toLocaleString()}</TableCell>
-                    <TableCell className="capitalize">{p.payment_method?.replace("_", " ")}</TableCell>
+                    <TableCell className="capitalize">{paymentMethodLabels[p.payment_method] || p.payment_method}</TableCell>
                     <TableCell>{p.reference_number || "-"}</TableCell>
                     <TableCell>
                       <Badge variant={p.status === "confirmed" ? "outline" : p.status === "rejected" ? "destructive" : "secondary"}>
-                        {p.status}
+                        {capitalize(p.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>{p.confirmed_by_name || "-"}</TableCell>
@@ -233,7 +252,7 @@ export default function FinancialStatementPage() {
                     <TableCell>{p.days_overdue}</TableCell>
                     <TableCell className="font-medium text-destructive">AED {Number(p.penalty_amount).toLocaleString()}</TableCell>
                     <TableCell>
-                      <Badge variant={p.status === "active" ? "destructive" : "outline"}>{p.status}</Badge>
+                      <Badge variant={p.status === "active" ? "destructive" : "outline"}>{capitalize(p.status)}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}

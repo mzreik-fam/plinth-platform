@@ -127,7 +127,7 @@ export default function TerminationDetailPage() {
         </Link>
         <h1 className="text-2xl font-bold">Termination: {terminationCase.unit_number}</h1>
         <Badge variant={terminationCase.status === "active" ? "destructive" : "outline"}>
-          {terminationCase.status}
+          {terminationCase.status.charAt(0).toUpperCase() + terminationCase.status.slice(1)}
         </Badge>
       </div>
 

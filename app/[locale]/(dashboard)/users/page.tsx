@@ -32,6 +32,15 @@ import {Label} from "@/components/ui/label";
 import {Plus, UserCircle, Loader2, Pencil, Trash2, Power} from "lucide-react";
 import {toast} from "sonner";
 
+const roleOptions = [
+  {value: "super_admin", label: "Super Admin"},
+  {value: "project_manager", label: "Project Manager"},
+  {value: "admin", label: "Admin"},
+  {value: "internal_agent", label: "Internal Agent"},
+  {value: "agency_admin", label: "Agency Admin"},
+  {value: "agency_agent", label: "Agency Agent"},
+];
+
 export default function UsersPage() {
   const t = useTranslations("users");
   const tc = useTranslations("common");
@@ -183,7 +192,7 @@ export default function UsersPage() {
                     <TableCell className="font-medium">{user.full_name}</TableCell>
                     <TableCell>@{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell className="capitalize">{user.role.replace(/_/g, " ")}</TableCell>
+                    <TableCell>{roleOptions.find((r) => r.value === user.role)?.label || user.role}</TableCell>
                     <TableCell>{getStatusBadge(user)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -227,14 +236,11 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label>{t("role")}</Label>
               <Select value={editForm.role} onValueChange={(v) => setEditForm({...editForm, role: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{roleOptions.find((r) => r.value === editForm.role)?.label}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
-                  <SelectItem value="project_manager">Project Manager</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="internal_agent">Internal Agent</SelectItem>
-                  <SelectItem value="agency_admin">Agency Admin</SelectItem>
-                  <SelectItem value="agency_agent">Agency Agent</SelectItem>
+                  {roleOptions.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

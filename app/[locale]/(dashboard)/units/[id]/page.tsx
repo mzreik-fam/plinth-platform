@@ -243,7 +243,7 @@ export default function UnitDetailPage() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({...form, status: v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{t(form.status)}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">{t("draft")}</SelectItem>
                     <SelectItem value="available">{t("available")}</SelectItem>
