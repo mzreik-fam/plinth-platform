@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
+import {useLocale} from "next-intl";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -11,6 +12,7 @@ import {Loader2, Building2, CheckCircle2} from "lucide-react";
 export default function InvitePage() {
   const params = useParams();
   const router = useRouter();
+  const locale = useLocale();
   const token = params.token as string;
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function InvitePage() {
             </div>
             <h1 className="text-xl font-bold">Account Created</h1>
             <p className="text-sm text-muted-foreground mt-2">Your password has been set. You can now log in.</p>
-            <Button className="mt-6" onClick={() => router.push("/en/login")}>Go to Login</Button>
+            <Button className="mt-6" onClick={() => router.push(`/${locale}/login`)}>Go to Login</Button>
           </CardContent>
         </Card>
       </div>

@@ -3,7 +3,7 @@ import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
 import {routing} from '@/lib/i18n';
 
-const publicRoutes = ['/login', '/portal'];
+const publicRoutes = ['/login', '/portal', '/invite'];
 
 export async function middleware(request: NextRequest) {
   const {pathname} = request.nextUrl;

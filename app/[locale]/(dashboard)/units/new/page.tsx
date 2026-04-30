@@ -118,7 +118,9 @@ export default function NewUnitPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">{t("type")}</Label>
               <Select value={form.unitType} onValueChange={(v) => setForm({...form, unitType: v || "apartment"})}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-11">
+                  <SelectValue>{t(form.unitType)}</SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="villa">{t("villa")}</SelectItem>
                   <SelectItem value="plot">{t("plot")}</SelectItem>
@@ -152,7 +154,9 @@ export default function NewUnitPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">Status</Label>
               <Select value={form.status} onValueChange={(v) => setForm({...form, status: v || "draft"})}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-11">
+                  <SelectValue>{t(form.status)}</SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">{t("draft")}</SelectItem>
                   <SelectItem value="available">{t("available")}</SelectItem>

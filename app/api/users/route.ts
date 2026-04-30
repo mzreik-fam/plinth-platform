@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
 
   const {searchParams} = new URL(request.url);
   const role = searchParams.get('role');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
+  const offset = parseInt(searchParams.get('offset') || '0');
 
   // Allow any authenticated user to query by role (needed for workflows like sales)
   // Restrict full user list to managers only
@@ -47,12 +49,14 @@ export async function GET(request: NextRequest) {
       FROM users
       WHERE role = ${role}
       ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
     `;
   } else {
     query = sql`
       SELECT id, email, username, full_name, role, is_active, invite_token, invite_expires_at, created_at
       FROM users
       ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
     `;
   }
 

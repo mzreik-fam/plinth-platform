@@ -13,6 +13,24 @@ async function getAuthUser() {
   }
 }
 
+export async function GET(request: NextRequest) {
+  const auth = await getAuthUser();
+  if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+
+  await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
+
+  try {
+    const paymentPlans = await sql`
+      SELECT * FROM payment_plans
+      ORDER BY created_at DESC
+    `;
+    return NextResponse.json({paymentPlans});
+  } catch (error) {
+    console.error('Get payment plans error:', error);
+    return NextResponse.json({error: 'Failed to fetch payment plans'}, {status: 500});
+  }
+}
+
 export async function POST(request: NextRequest) {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});

@@ -206,7 +206,9 @@ export default function UnitDetailPage() {
               <div className="space-y-2">
                 <Label>{t("type")}</Label>
                 <Select value={form.unit_type} onValueChange={(v) => setForm({...form, unit_type: v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue>{form.unit_type ? t(form.unit_type) : ''}</SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="villa">{t("villa")}</SelectItem>
                     <SelectItem value="plot">{t("plot")}</SelectItem>

@@ -9,7 +9,7 @@ import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {AlertTriangle, CheckCircle2, ArrowLeft} from "lucide-react";
+import {AlertTriangle, CheckCircle2, ArrowLeft, Loader2} from "lucide-react";
 import {toast} from "sonner";
 
 const stepDescriptions = [
@@ -26,8 +26,9 @@ export default function TerminationDetailPage() {
   const [terminationCase, setTerminationCase] = useState<any>(null);
   const [steps, setSteps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [stepForms, setStepForms] = useState<Record<string, any>>({});
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -39,7 +40,6 @@ export default function TerminationDetailPage() {
     const data = await res.json();
     setTerminationCase(data.case);
     setSteps(data.steps || []);
-    // Initialize step forms from loaded data
     const forms: Record<string, any> = {};
     (data.steps || []).forEach((step: any) => {
       forms[step.id] = {
@@ -51,27 +51,67 @@ export default function TerminationDetailPage() {
       };
     });
     setStepForms(forms);
+    setDirty(false);
     setLoading(false);
   }
 
-  async function saveStep(stepId: string) {
-    setUpdating(true);
-    const form = stepForms[stepId];
-    const updates: any = {};
-    if (form.notice_sent_at) updates.notice_sent_at = form.notice_sent_at;
-    if (form.notice_method) updates.notice_method = form.notice_method;
-    if (form.courier_tracking) updates.courier_tracking = form.courier_tracking;
-    if (form.receipt_confirmed_at) updates.receipt_confirmed_at = form.receipt_confirmed_at;
-    if (form.notes) updates.notes = form.notes;
+  async function saveAll() {
+    setSaving(true);
+    try {
+      const promises = steps
+        .filter((step) => !step.completed_at)
+        .map(async (step) => {
+          const form = stepForms[step.id];
+          if (!form) return;
+          const updates: any = {};
+          if (form.notice_sent_at) updates.notice_sent_at = form.notice_sent_at;
+          if (form.notice_method) updates.notice_method = form.notice_method;
+          if (form.courier_tracking) updates.courier_tracking = form.courier_tracking;
+          if (form.receipt_confirmed_at) updates.receipt_confirmed_at = form.receipt_confirmed_at;
+          if (form.notes) updates.notes = form.notes;
 
-    await fetch(`/api/termination-steps/${stepId}`, {
-      method: "PATCH",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(updates),
-    });
-    await loadData();
-    setUpdating(false);
-    toast.success("Step details saved");
+          if (Object.keys(updates).length === 0) return;
+
+          return fetch(`/api/termination-steps/${step.id}`, {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(updates),
+          });
+        });
+
+      await Promise.all(promises);
+      await loadData();
+      toast.success("All step details saved");
+    } catch {
+      toast.error("Failed to save steps");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function completeStep(stepId: string) {
+    setSaving(true);
+    try {
+      await fetch(`/api/termination-steps/${stepId}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({status: "completed", completed_at: new Date().toISOString()}),
+      });
+      await loadData();
+      toast.success("Step marked complete");
+    } catch {
+      toast.error("Failed to complete step");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function updateField(stepId: string, field: string, value: string) {
+    setStepForms((prev) => ({
+      ...prev,
+      [stepId]: {...prev[stepId], [field]: value},
+    }));
+    setDirty(true);
   }
 
   if (loading) return <div className="text-center py-8">Loading...</div>;
@@ -130,11 +170,17 @@ export default function TerminationDetailPage() {
 
       {/* DLD 4-Step Process */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             DLD Termination Process
           </CardTitle>
+          {dirty && (
+            <Button size="sm" disabled={saving} onClick={saveAll}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Save All Changes
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {steps.map((step, index) => {
@@ -182,18 +228,18 @@ export default function TerminationDetailPage() {
                         <Label className="text-xs">Notice Sent At</Label>
                         <Input
                           type="datetime-local"
-                          disabled={updating}
+                          disabled={saving}
                           value={stepForms[step.id]?.notice_sent_at || ""}
-                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], notice_sent_at: e.target.value}})}
+                          onChange={(e) => updateField(step.id, "notice_sent_at", e.target.value)}
                         />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Notice Method</Label>
                         <Input
                           placeholder="Email + Courier"
-                          disabled={updating}
+                          disabled={saving}
                           value={stepForms[step.id]?.notice_method || ""}
-                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], notice_method: e.target.value}})}
+                          onChange={(e) => updateField(step.id, "notice_method", e.target.value)}
                         />
                       </div>
                     </div>
@@ -202,18 +248,18 @@ export default function TerminationDetailPage() {
                         <Label className="text-xs">Courier Tracking</Label>
                         <Input
                           placeholder="Tracking number"
-                          disabled={updating}
+                          disabled={saving}
                           value={stepForms[step.id]?.courier_tracking || ""}
-                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], courier_tracking: e.target.value}})}
+                          onChange={(e) => updateField(step.id, "courier_tracking", e.target.value)}
                         />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Receipt Confirmed</Label>
                         <Input
                           type="datetime-local"
-                          disabled={updating}
+                          disabled={saving}
                           value={stepForms[step.id]?.receipt_confirmed_at || ""}
-                          onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], receipt_confirmed_at: e.target.value}})}
+                          onChange={(e) => updateField(step.id, "receipt_confirmed_at", e.target.value)}
                         />
                       </div>
                     </div>
@@ -221,24 +267,16 @@ export default function TerminationDetailPage() {
                       <Label className="text-xs">Notes</Label>
                       <Input
                         placeholder="Add notes..."
-                        disabled={updating}
+                        disabled={saving}
                         value={stepForms[step.id]?.notes || ""}
-                        onChange={(e) => setStepForms({...stepForms, [step.id]: {...stepForms[step.id], notes: e.target.value}})}
+                        onChange={(e) => updateField(step.id, "notes", e.target.value)}
                       />
                     </div>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
-                        disabled={updating}
-                        onClick={() => saveStep(step.id)}
-                      >
-                        Save Details
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={updating}
-                        onClick={() => saveStep(step.id)}
+                        disabled={saving}
+                        onClick={() => completeStep(step.id)}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-1" />
                         Mark Step Complete

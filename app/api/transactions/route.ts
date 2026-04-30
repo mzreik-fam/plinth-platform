@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status');
   const search = searchParams.get('search');
   const buyerId = searchParams.get('buyerId');
-  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
   const offset = parseInt(searchParams.get('offset') || '0');
 
   let whereClauses: string[] = [];
@@ -95,13 +95,16 @@ export async function POST(request: NextRequest) {
 
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-    // Check unit is available (draft is not allowed for transactions)
-    const unitCheck = await sql`SELECT status FROM units WHERE id = ${data.unitId}`;
-    if (unitCheck.length === 0) {
-      return NextResponse.json({error: 'Unit not found'}, {status: 404});
-    }
-    if (unitCheck[0].status !== 'available') {
-      return NextResponse.json({error: 'Unit is not available for sale'}, {status: 400});
+    // Atomically book the unit if still available
+    const unitUpdate = await sql`
+      UPDATE units
+      SET status = 'pre_booked', updated_at = NOW()
+      WHERE id = ${data.unitId} AND status = 'available'
+      RETURNING id
+    `;
+
+    if (unitUpdate.length === 0) {
+      return NextResponse.json({error: 'Unit is not available for sale'}, {status: 409});
     }
 
     const portalToken = randomBytes(32).toString('hex');
@@ -120,7 +123,7 @@ export async function POST(request: NextRequest) {
     `;
 
     // Update unit status to pre_booked
-    await sql`UPDATE units SET status = 'pre_booked', updated_at = NOW() WHERE id = ${data.unitId}`;
+    // Already done atomically above before INSERT
 
     return NextResponse.json({transaction: result[0]}, {status: 201});
   } catch (error) {

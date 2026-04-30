@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status');
   const search = searchParams.get('search');
   const projectId = searchParams.get('projectId');
-  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
   const offset = parseInt(searchParams.get('offset') || '0');
 
   let whereClauses: string[] = [];

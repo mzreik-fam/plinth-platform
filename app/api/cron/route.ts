@@ -26,6 +26,16 @@ export async function GET(request: NextRequest) {
   };
 
   try {
+    // Ensure reminder tracking table exists
+    await sql`
+      CREATE TABLE IF NOT EXISTS payment_reminders (
+        id SERIAL PRIMARY KEY,
+        transaction_id UUID NOT NULL,
+        milestone_label TEXT NOT NULL,
+        sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
     // 1. EOI Auto-Release: Find EOI transactions past expiry (7 days default)
     const expiredEois = await sql`
       SELECT t.id, t.unit_id, t.eoi_date, t.buyer_id, u.unit_number
@@ -92,6 +102,16 @@ export async function GET(request: NextRequest) {
 
           // If not fully paid and due date is within 7 days
           if (totalPaid < totalPrice && dueDate > new Date() && dueDate < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)) {
+            // Check if reminder was already sent in the last 24 hours
+            const recentReminder = await sql`
+              SELECT 1 FROM payment_reminders
+              WHERE transaction_id = ${tx.transaction_id}
+              AND milestone_label = ${milestone.label}
+              AND sent_at > NOW() - INTERVAL '24 hours'
+              LIMIT 1
+            `;
+            if (recentReminder.length > 0) continue;
+
             if (tx.email) {
               await notifyPaymentDue({
                 to: tx.email,
@@ -100,6 +120,12 @@ export async function GET(request: NextRequest) {
                 dueDate: dueDate.toLocaleDateString(),
               });
               results.paymentReminders++;
+
+              // Track that reminder was sent
+              await sql`
+                INSERT INTO payment_reminders (transaction_id, milestone_label, sent_at)
+                VALUES (${tx.transaction_id}, ${milestone.label}, NOW())
+              `;
             }
           }
         }

@@ -14,6 +14,17 @@ import {ArrowLeft, Copy, FileText, KeyRound, AlertTriangle} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -22,6 +33,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {Skeleton} from "@/components/ui/skeleton";
+
+const paymentMethodLabels: Record<string, string> = {
+  bank_transfer: "Bank Transfer",
+  cheque: "Cheque",
+  cash: "Cash",
+  card: "Card",
+};
 
 const statusColors: Record<string, string> = {
   eoi: "warning",
@@ -192,27 +210,47 @@ export default function TransactionDetailPage() {
             </Button>
           )}
           {(transaction.status === 'eoi' || transaction.status === 'booking_pending' || transaction.status === 'confirmed') && (
-            <Button variant="destructive" onClick={async () => {
-              if (!confirm('Are you sure you want to terminate this transaction? This will start the DLD termination process.')) return;
-              const res = await fetch("/api/terminations", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                  transaction_id: id,
-                  unit_id: transaction.unit_id,
-                  buyer_id: transaction.buyer_id,
-                  reason: "Buyer request",
-                  total_paid: totalPaid,
-                }),
-              });
-              if (res.ok) {
-                const data = await res.json();
-                window.location.href = `/${locale}/terminations/${data.case.id}`;
-              }
-            }}>
-              <AlertTriangle className="h-4 w-4 mr-1" />
-              Terminate
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger>
+                <Button variant="destructive">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Terminate
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Terminate this transaction?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This starts the DLD termination process. The transaction and unit will be marked as terminated. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      const res = await fetch("/api/terminations", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({
+                          transaction_id: id,
+                          unit_id: transaction.unit_id,
+                          buyer_id: transaction.buyer_id,
+                          reason: "Buyer request",
+                          total_paid: totalPaid,
+                        }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        window.location.href = `/${locale}/terminations/${data.case.id}`;
+                      }
+                    }}
+                    className="bg-destructive text-destructive-foreground"
+                  >
+                    Yes, Terminate
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           {transaction.status === 'eoi' && (
             <Button onClick={() => updateStatus('booking_pending')}>Move to Booking Pending</Button>
@@ -241,7 +279,9 @@ export default function TransactionDetailPage() {
               <div className="space-y-2">
                 <Label>{t("paymentMethod")}</Label>
                 <Select value={paymentForm.paymentMethod} onValueChange={(v) => setPaymentForm({...paymentForm, paymentMethod: v || "bank_transfer"})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue>{paymentMethodLabels[paymentForm.paymentMethod]}</SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bank_transfer">{t("bankTransfer")}</SelectItem>
                     <SelectItem value="cheque">{t("cheque")}</SelectItem>

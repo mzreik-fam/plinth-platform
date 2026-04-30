@@ -32,7 +32,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning
+    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased font-sans">

@@ -103,17 +103,25 @@ export default function PortalPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {milestones.map((m: any, i: number) => (
-                <div key={i} className="flex justify-between items-center py-2 border-b last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{m.label}</p>
-                    <p className="text-xs text-muted-foreground">{m.percent}% of total price</p>
+              {milestones.map((m: any, i: number) => {
+                const dueDate = transaction.booking_date
+                  ? new Date(new Date(transaction.booking_date).getTime() + m.due_days_from_booking * 24 * 60 * 60 * 1000)
+                  : null;
+                return (
+                  <div key={i} className="flex justify-between items-center py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{m.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {m.percent}% of total price
+                        {dueDate ? ` · Due ${dueDate.toLocaleDateString()}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium">
+                      AED {Math.round(Number(transaction.total_price) * (m.percent / 100)).toLocaleString()}
+                    </span>
                   </div>
-                  <span className="text-sm font-medium">
-                    AED {Math.round(Number(transaction.total_price) * (m.percent / 100)).toLocaleString()}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         )}

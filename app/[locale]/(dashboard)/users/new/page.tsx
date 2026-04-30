@@ -129,7 +129,11 @@ export default function NewUserPage() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t("role")}</Label>
                 <Select value={form.role} onValueChange={(v) => setForm({...form, role: v || "internal_agent"})}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11">
+                    <SelectValue>
+                      {roleOptions.find((r) => r.value === form.role)?.label}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {roleOptions.map((r) => (
                       <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
