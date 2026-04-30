@@ -83,16 +83,16 @@ export async function GET(request: NextRequest) {
 
   // Calculate financial summary
   const totalPaid = payments
-    .filter((p: {status: string; amount: unknown}) => p.status === 'confirmed')
-    .reduce((sum: number, p: {status: string; amount: unknown}) => sum + Number(p.amount), 0);
+    .filter((p) => p.status === 'confirmed')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
   const totalPending = payments
-    .filter((p: {status: string; amount: unknown}) => p.status === 'pending')
-    .reduce((sum: number, p: {status: string; amount: unknown}) => sum + Number(p.amount), 0);
+    .filter((p) => p.status === 'pending')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
   const totalPenalties = penalties
-    .filter((p: {status: string; penalty_amount: unknown}) => p.status === 'active')
-    .reduce((sum: number, p: {status: string; penalty_amount: unknown}) => sum + Number(p.penalty_amount), 0);
+    .filter((p) => p.status === 'active')
+    .reduce((sum, p) => sum + Number(p.penalty_amount), 0);
 
   const totalPrice = Number(transaction[0].total_price);
   const outstanding = totalPrice - totalPaid + totalPenalties;

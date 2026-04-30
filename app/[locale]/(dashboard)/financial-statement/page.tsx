@@ -45,6 +45,9 @@ interface FinancialData {
     status: string;
     total_price: number;
     buyer_name: string;
+    buyer_email: string;
+    buyer_phone: string;
+    agent_name?: string;
     payment_plan_name?: string;
     payment_plan_milestones?: Array<{label: string; percent: number}>;
   };
@@ -54,22 +57,33 @@ interface FinancialData {
     payment_method: string;
     status: string;
     created_at: string;
+    reference_number?: string;
+    confirmed_by_name?: string;
   }>;
   penalties: Array<{
     id: string;
     amount: number;
     reason: string;
     status: string;
+    milestone_label?: string;
+    due_date?: string;
+    days_overdue?: number;
+    penalty_amount?: number;
   }>;
   documents: Array<{
     id: string;
     file_name: string;
     category: string;
+    uploaded_by_name?: string;
+    created_at: string;
   }>;
   summary: {
+    totalPrice: number;
     totalPaid: number;
-    remainingBalance: number;
-    totalPenalty: number;
+    totalPending: number;
+    totalPenalties: number;
+    outstanding: number;
+    progressPercent: number;
   };
 }
 
@@ -283,7 +297,7 @@ export default function FinancialStatementPage() {
                 {penalties.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell>{p.milestone_label}</TableCell>
-                    <TableCell>{new Date(p.due_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{p.due_date ? new Date(p.due_date).toLocaleDateString() : "-"}</TableCell>
                     <TableCell>{p.days_overdue}</TableCell>
                     <TableCell className="font-medium text-destructive">AED {Number(p.penalty_amount).toLocaleString()}</TableCell>
                     <TableCell>
