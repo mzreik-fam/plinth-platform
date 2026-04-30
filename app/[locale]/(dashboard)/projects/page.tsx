@@ -35,22 +35,42 @@ import {toast} from "sonner";
 export default function ProjectsPage() {
   const locale = useLocale();
   const [projects, setProjects] = useState<any[]>([]);
+  const [areas, setAreas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
-  const [form, setForm] = useState({name: "", location: "", area: ""});
+  const [form, setForm] = useState<{name: string; areaId: string}>({name: "", areaId: ""});
   const [saving, setSaving] = useState(false);
+  const [filterAreaId, setFilterAreaId] = useState<string>("all");
 
   const [editProject, setEditProject] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
-    fetchProjects();
+    fetchAreas().then(() => fetchProjects());
   }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [filterAreaId]);
+
+  async function fetchAreas() {
+    try {
+      const res = await fetch("/api/areas");
+      const data = await res.json();
+      setAreas(data.areas || []);
+    } catch {
+      // ignore
+    }
+  }
 
   async function fetchProjects() {
     try {
-      const res = await fetch("/api/projects");
+      setLoading(true);
+      const url = filterAreaId && filterAreaId !== "all"
+        ? `/api/projects?areaId=${filterAreaId}`
+        : "/api/projects";
+      const res = await fetch(url);
       const data = await res.json();
       setProjects(data.projects || []);
     } catch {
@@ -66,12 +86,16 @@ export default function ProjectsPage() {
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(form),
+      body: JSON.stringify({name: form.name, areaId: form.areaId || undefined}),
     });
     if (res.ok) {
-      setForm({name: "", location: "", area: ""});
+      setForm({name: "", areaId: ""});
       setShowDialog(false);
       fetchProjects();
+      toast.success("Project created");
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to create project");
     }
     setSaving(false);
   }
@@ -96,8 +120,7 @@ export default function ProjectsPage() {
     setEditProject(project);
     setEditForm({
       name: project.name,
-      location: project.location,
-      area: project.area,
+      areaId: project.area_id || "",
       status: project.status,
     });
   }
@@ -110,7 +133,11 @@ export default function ProjectsPage() {
       const res = await fetch(`/api/projects/${editProject.id}`, {
         method: "PATCH",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          name: editForm.name,
+          areaId: editForm.areaId || null,
+          status: editForm.status,
+        }),
       });
       if (res.ok) {
         toast.success("Project updated");
@@ -157,22 +184,18 @@ export default function ProjectsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Location</Label>
-                <Input
-                  value={form.location}
-                  onChange={(e) => setForm({...form, location: e.target.value})}
-                  placeholder="e.g., Dubai Marina"
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label className="text-sm font-medium">Area</Label>
-                <Input
-                  value={form.area}
-                  onChange={(e) => setForm({...form, area: e.target.value})}
-                  placeholder="e.g., Jumeirah, Downtown"
-                  className="h-11"
-                />
+                <Select value={form.areaId} onValueChange={(v) => setForm({...form, areaId: v || ""})}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select an area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {areas.map((area: any) => (
+                      <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex gap-3 pt-2">
                 <Button type="submit" disabled={saving} className="h-11 px-6">
@@ -183,6 +206,23 @@ export default function ProjectsPage() {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Select value={filterAreaId} onValueChange={(v) => setFilterAreaId(v || "all")}>
+          <SelectTrigger className="w-[240px] h-10">
+            <SelectValue placeholder="Filter by area" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All areas</SelectItem>
+            {areas.map((area: any) => (
+              <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {filterAreaId && filterAreaId !== "all" && (
+          <Button variant="ghost" size="sm" onClick={() => setFilterAreaId("all")}>Clear filter</Button>
+        )}
       </div>
 
       {loading ? (
@@ -204,7 +244,6 @@ export default function ProjectsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
                   <TableHead>Area</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -220,14 +259,13 @@ export default function ProjectsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {project.location ? (
+                      {project.area_name ? (
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <MapPin className="h-3.5 w-3.5" />
-                          {project.location}
+                          {project.area_name}
                         </div>
                       ) : "—"}
                     </TableCell>
-                    <TableCell>{project.area || "—"}</TableCell>
                     <TableCell>
                       <Badge variant={project.status === "active" ? "default" : "secondary"} className="text-xs">
                         {project.status}
@@ -262,12 +300,18 @@ export default function ProjectsPage() {
               <Input value={editForm.name || ""} onChange={(e) => setEditForm({...editForm, name: e.target.value})} required className="h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Location</Label>
-              <Input value={editForm.location || ""} onChange={(e) => setEditForm({...editForm, location: e.target.value})} className="h-11" />
-            </div>
-            <div className="space-y-2">
               <Label className="text-sm font-medium">Area</Label>
-              <Input value={editForm.area || ""} onChange={(e) => setEditForm({...editForm, area: e.target.value})} className="h-11" />
+              <Select value={editForm.areaId || ""} onValueChange={(v) => setEditForm({...editForm, areaId: v || ""})}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select an area" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {areas.map((area: any) => (
+                    <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Status</Label>

@@ -21,9 +21,10 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
   const projects = await sql`
-    SELECT id, name, location, area, status, created_at
-    FROM projects
-    WHERE id = ${id}
+    SELECT p.id, p.name, p.status, p.created_at, a.id as area_id, a.name as area_name
+    FROM projects p
+    LEFT JOIN areas a ON a.id = p.area_id
+    WHERE p.id = ${id}
     LIMIT 1
   `;
 
@@ -43,14 +44,13 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
 
   try {
     const body = await request.json();
-    const {name, location, area, status} = body;
+    const {name, areaId, status} = body;
 
     const result = await sql`
       UPDATE projects
       SET
         name = COALESCE(${name || null}, name),
-        location = COALESCE(${location || null}, location),
-        area = COALESCE(${area || null}, area),
+        area_id = ${areaId !== undefined ? (areaId || null) : undefined},
         status = COALESCE(${status || null}, status),
         updated_at = NOW()
       WHERE id = ${id}

@@ -25,12 +25,19 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE(tenant_id, username)
 );
 
+CREATE TABLE IF NOT EXISTS areas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(tenant_id, name)
+);
+
 CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  location TEXT,
-  area TEXT,
+  area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
   status TEXT DEFAULT 'active',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -255,6 +262,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_token TEXT UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_areas_tenant ON areas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_projects_area ON projects(area_id);
 CREATE INDEX IF NOT EXISTS idx_units_tenant ON units(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_units_project ON units(project_id);
 CREATE INDEX IF NOT EXISTS idx_units_status ON units(status);
@@ -285,6 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is
 
 -- RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE areas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buyers ENABLE ROW LEVEL SECURITY;
@@ -305,6 +315,9 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_isolation' AND tablename = 'users') THEN
     CREATE POLICY tenant_isolation ON users FOR ALL USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_isolation' AND tablename = 'areas') THEN
+    CREATE POLICY tenant_isolation ON areas FOR ALL USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_isolation' AND tablename = 'projects') THEN
     CREATE POLICY tenant_isolation ON projects FOR ALL USING (tenant_id = current_setting('app.current_tenant_id')::UUID);

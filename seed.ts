@@ -230,23 +230,37 @@ async function seed() {
     `);
     console.log('Super Admin created:', userResult.rows[0].id);
 
-    // 3. Create sample projects
+    // 3. Create sample areas
+    const areaNames = ['Dubai Marina', 'Palm Jumeirah', 'Downtown Dubai'];
+    const areaMap: Record<string, string> = {};
+    for (const name of areaNames) {
+      const areaResult = await client.query(`
+        INSERT INTO areas (tenant_id, name)
+        VALUES ('${tenantId}', '${name}')
+        ON CONFLICT (tenant_id, name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
+      `);
+      areaMap[name] = areaResult.rows[0].id;
+    }
+    console.log('Areas created');
+
+    // 4. Create sample projects
     const projects = [
-      { name: 'Marina Heights', location: 'Dubai Marina' },
-      { name: 'Palm Residences', location: 'Palm Jumeirah' },
-      { name: 'Downtown Views', location: 'Downtown Dubai' },
+      { name: 'Marina Heights', area: 'Dubai Marina' },
+      { name: 'Palm Residences', area: 'Palm Jumeirah' },
+      { name: 'Downtown Views', area: 'Downtown Dubai' },
     ];
 
     for (const project of projects) {
       await client.query(`
-        INSERT INTO projects (tenant_id, name, location)
-        VALUES ('${tenantId}', '${project.name}', '${project.location}')
+        INSERT INTO projects (tenant_id, name, area_id)
+        VALUES ('${tenantId}', '${project.name}', '${areaMap[project.area]}')
         ON CONFLICT DO NOTHING
       `);
     }
     console.log('Projects created');
 
-    // 4. Create sample payment plan
+    // 5. Create sample payment plan
     await client.query(`
       INSERT INTO payment_plans (tenant_id, name, description, milestones, is_default)
       VALUES (
@@ -260,7 +274,7 @@ async function seed() {
     `);
     console.log('Payment plan created');
 
-    // 5. Create sample units
+    // 6. Create sample units
     const projectResult = await client.query(`SELECT id FROM projects WHERE tenant_id = '${tenantId}' LIMIT 1`);
     const projectId = projectResult.rows[0]?.id;
 
@@ -286,7 +300,7 @@ async function seed() {
       console.log('Units created');
     }
 
-    // 6. Create sample buyers
+    // 7. Create sample buyers
     const buyers = [
       { full_name: 'Ahmed Al-Rashid', email: 'ahmed@example.com', phone: '+971501234567', emirates_id: '784-1234-567890-1', nationality: 'UAE' },
       { full_name: 'Sarah Johnson', email: 'sarah@example.com', phone: '+971502345678', emirates_id: '784-2345-678901-2', nationality: 'UK' },
@@ -302,7 +316,7 @@ async function seed() {
     }
     console.log('Buyers created');
 
-    // 7. Create sample transactions
+    // 8. Create sample transactions
     const unitResult = await client.query(`SELECT id FROM units WHERE tenant_id = '${tenantId}' AND status = 'available' LIMIT 2`);
     const buyerResult = await client.query(`SELECT id FROM buyers WHERE tenant_id = '${tenantId}' LIMIT 2`);
     const planResult = await client.query(`SELECT id FROM payment_plans WHERE tenant_id = '${tenantId}' LIMIT 1`);
@@ -354,7 +368,7 @@ async function seed() {
       console.log('Transactions, payments, handover, and termination created');
     }
 
-    // 8. Create unit approval for draft unit
+    // 9. Create unit approval for draft unit
     const draftUnit = await client.query(`SELECT id FROM units WHERE tenant_id = '${tenantId}' AND status = 'draft' LIMIT 1`);
     if (draftUnit.rows.length > 0) {
       await client.query(`

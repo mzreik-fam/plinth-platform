@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#audit files
+agents.md
+audit_v2.md
+pending.md
+ui_improvements.md
+BUGS.md

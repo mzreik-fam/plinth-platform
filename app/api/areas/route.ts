@@ -19,26 +19,14 @@ export async function GET(request: NextRequest) {
 
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-  const {searchParams} = new URL(request.url);
-  const areaId = searchParams.get('areaId');
-
-  let whereClause = '';
-  const params: any[] = [];
-  if (areaId) {
-    whereClause = 'WHERE p.area_id = $1';
-    params.push(areaId);
-  }
-
-  const projects = await sql.query(`
-    SELECT p.id, p.name, p.status, p.created_at, a.id as area_id, a.name as area_name
-    FROM projects p
-    LEFT JOIN areas a ON a.id = p.area_id
-    ${whereClause}
-    ORDER BY p.created_at DESC
+  const areas = await sql`
+    SELECT id, name, created_at
+    FROM areas
+    ORDER BY name ASC
     LIMIT 200
-  `, params);
+  `;
 
-  return NextResponse.json({projects}, {
+  return NextResponse.json({areas}, {
     headers: {'Cache-Control': 'private, max-age=300'},
   });
 }
@@ -51,20 +39,24 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const {name, areaId} = body;
+    const {name} = body;
 
-    if (!name) {
-      return NextResponse.json({error: 'Project name is required'}, {status: 400});
+    if (!name || !name.trim()) {
+      return NextResponse.json({error: 'Area name is required'}, {status: 400});
     }
 
     const result = await sql`
-      INSERT INTO projects (tenant_id, name, area_id)
-      VALUES (${auth.tenantId}, ${name}, ${areaId || null})
+      INSERT INTO areas (tenant_id, name)
+      VALUES (${auth.tenantId}, ${name.trim()})
       RETURNING *
     `;
 
-    return NextResponse.json({project: result[0]}, {status: 201});
-  } catch {
-    return NextResponse.json({error: 'Failed to create project'}, {status: 500});
+    return NextResponse.json({area: result[0]}, {status: 201});
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return NextResponse.json({error: 'An area with this name already exists'}, {status: 409});
+    }
+    console.error('Create area error:', error);
+    return NextResponse.json({error: 'Failed to create area'}, {status: 500});
   }
 }

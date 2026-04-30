@@ -24,11 +24,13 @@ import {
   FolderKanban,
   CalendarDays,
   ClipboardList,
+  MapPin,
 } from "lucide-react";
 
 const mainNavItems = [
   {key: "dashboard", href: "", icon: LayoutDashboard},
   {key: "projects", href: "/projects", icon: FolderKanban},
+  {key: "areas", href: "/areas", icon: MapPin},
   {key: "units", href: "/units", icon: Building2},
   {key: "sales", href: "/sales", icon: ShoppingCart},
   {key: "buyers", href: "/buyers", icon: Users},
