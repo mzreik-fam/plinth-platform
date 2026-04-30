@@ -63,20 +63,20 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
   const result = await sql`
     UPDATE handovers
     SET
-      bcc_uploaded_at = COALESCE(${body.bcc_uploaded_at || null}, bcc_uploaded_at),
-      bcc_document_url = COALESCE(${body.bcc_document_url || null}, bcc_document_url),
-      completion_notice_sent_at = COALESCE(${body.completion_notice_sent_at || null}, completion_notice_sent_at),
-      handover_payment_amount = COALESCE(${body.handover_payment_amount || null}, handover_payment_amount),
-      handover_payment_paid_at = COALESCE(${body.handover_payment_paid_at || null}, handover_payment_paid_at),
-      dld_registration_confirmed = COALESCE(${body.dld_registration_confirmed || null}, dld_registration_confirmed),
-      oqood_paid = COALESCE(${body.oqood_paid || null}, oqood_paid),
-      utility_registration_confirmed = COALESCE(${body.utility_registration_confirmed || null}, utility_registration_confirmed),
-      inspection_date = COALESCE(${body.inspection_date || null}, inspection_date),
-      inspection_notes = COALESCE(${body.inspection_notes || null}, inspection_notes),
+      bcc_uploaded_at = COALESCE(${body.bcc_uploaded_at ?? null}, bcc_uploaded_at),
+      bcc_document_url = COALESCE(${body.bcc_document_url ?? null}, bcc_document_url),
+      completion_notice_sent_at = COALESCE(${body.completion_notice_sent_at ?? null}, completion_notice_sent_at),
+      handover_payment_amount = COALESCE(${body.handover_payment_amount ?? null}, handover_payment_amount),
+      handover_payment_paid_at = COALESCE(${body.handover_payment_paid_at ?? null}, handover_payment_paid_at),
+      dld_registration_confirmed = COALESCE(${body.dld_registration_confirmed ?? null}, dld_registration_confirmed),
+      oqood_paid = COALESCE(${body.oqood_paid ?? null}, oqood_paid),
+      utility_registration_confirmed = COALESCE(${body.utility_registration_confirmed ?? null}, utility_registration_confirmed),
+      inspection_date = COALESCE(${body.inspection_date ?? null}, inspection_date),
+      inspection_notes = COALESCE(${body.inspection_notes ?? null}, inspection_notes),
       inspection_photos = COALESCE(${body.inspection_photos ? JSON.stringify(body.inspection_photos) : null}, inspection_photos),
-      key_handover_signed_at = COALESCE(${body.key_handover_signed_at || null}, key_handover_signed_at),
-      key_handover_document_url = COALESCE(${body.key_handover_document_url || null}, key_handover_document_url),
-      status = COALESCE(${body.status || null}, status),
+      key_handover_signed_at = COALESCE(${body.key_handover_signed_at ?? null}, key_handover_signed_at),
+      key_handover_document_url = COALESCE(${body.key_handover_document_url ?? null}, key_handover_document_url),
+      status = COALESCE(${body.status ?? null}, status),
       updated_at = NOW()
     WHERE id = ${id}
     RETURNING *

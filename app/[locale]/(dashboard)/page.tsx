@@ -182,8 +182,8 @@ export default function DashboardPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Occupancy Rate</span>
                 <span className="font-semibold">
-                  {stats?.units?.total > 0
-                    ? Math.round(((stats.units.booked + stats.units.handed_over) / stats.units.total) * 100)
+                  {Number(stats?.units?.total || 0) > 0
+                    ? Math.round(((Number(stats.units.booked || 0) + Number(stats.units.handed_over || 0)) / Number(stats.units.total)) * 100)
                     : 0}%
                 </span>
               </div>

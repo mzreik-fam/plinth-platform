@@ -72,6 +72,9 @@ export function Sidebar() {
 
   const isActive = (href: string) => {
     const fullPath = `/${locale}${href}`;
+    if (href === "") {
+      return pathname === fullPath || pathname === `/${locale}`;
+    }
     return pathname === fullPath || pathname.startsWith(fullPath + "/");
   };
 
@@ -165,7 +168,7 @@ export function Sidebar() {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{user.fullName}</p>
+                  <p className="text-sm font-semibold truncate">{user.full_name}</p>
                   <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace("_", " ")}</p>
                 </div>
               </div>
@@ -238,7 +241,7 @@ export function Sidebar() {
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{user.fullName}</p>
+                        <p className="text-sm font-semibold truncate">{user.full_name}</p>
                         <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace("_", " ")}</p>
                       </div>
                     </div>

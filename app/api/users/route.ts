@@ -21,7 +21,7 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().min(1),
-  role: z.enum(['super_admin', 'project_manager', 'admin', 'internal_agent']),
+  role: z.enum(['super_admin', 'project_manager', 'admin', 'internal_agent', 'agency_admin', 'agency_agent', 'buyer']),
 });
 
 export async function GET(request: NextRequest) {

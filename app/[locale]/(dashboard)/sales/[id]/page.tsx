@@ -65,10 +65,10 @@ export default function TransactionDetailPage() {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        transactionId: id,
+        transaction_id: id,
         amount: Number(paymentForm.amount),
-        paymentMethod: paymentForm.paymentMethod,
-        referenceNumber: paymentForm.referenceNumber,
+        payment_method: paymentForm.paymentMethod,
+        reference_number: paymentForm.referenceNumber,
       }),
     });
     if (res.ok) {
@@ -80,7 +80,7 @@ export default function TransactionDetailPage() {
 
   function copyPortalLink() {
     if (!transaction?.portal_token) return;
-    const url = `${window.location.origin}/portal/${transaction.portal_token}`;
+    const url = `${window.location.origin}/${locale}/portal/${transaction.portal_token}`;
     navigator.clipboard.writeText(url);
     alert("Portal link copied!");
   }
@@ -88,7 +88,7 @@ export default function TransactionDetailPage() {
   if (loading) return <div className="text-muted-foreground">{tc("loading")}</div>;
   if (!transaction) return <div className="text-muted-foreground">{tc("noData")}</div>;
 
-  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalPaid = payments.filter((p: any) => p.status === 'confirmed').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
   const remaining = Number(transaction.total_price) - totalPaid;
 
   return (

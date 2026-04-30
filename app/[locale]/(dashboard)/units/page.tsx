@@ -42,8 +42,17 @@ export default function UnitsPage() {
 
   async function deleteUnit(id: string) {
     if (!confirm(tc("confirm"))) return;
-    await fetch(`/api/units/${id}`, {method: "DELETE"});
-    fetchUnits();
+    try {
+      const res = await fetch(`/api/units/${id}`, {method: "DELETE"});
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || tc("error"));
+        return;
+      }
+      fetchUnits();
+    } catch {
+      alert(tc("error"));
+    }
   }
 
   return (

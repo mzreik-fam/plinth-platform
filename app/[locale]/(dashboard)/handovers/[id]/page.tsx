@@ -211,7 +211,11 @@ export default function HandoverDetailPage() {
                 <Label>Inspection Date</Label>
                 <Input
                   type="datetime-local"
-                  onChange={(e) => updateHandover({inspection_date: e.target.value, status: "snagging"})}
+                  onBlur={(e) => {
+                    if (e.target.value) {
+                      updateHandover({inspection_date: e.target.value, status: "snagging"});
+                    }
+                  }}
                 />
               </div>
             )}
