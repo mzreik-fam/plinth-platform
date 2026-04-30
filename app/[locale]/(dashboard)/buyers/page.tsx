@@ -6,11 +6,23 @@ import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {Label} from "@/components/ui/label";
 import {Plus, Users, Loader2, Mail, Phone, Globe, Search, ShoppingCart, Pencil, Trash2} from "lucide-react";
 import {toast} from "sonner";
-
-
 
 export default function BuyersPage() {
   const t = useTranslations("buyers");
@@ -22,6 +34,10 @@ export default function BuyersPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
+
+  const [editBuyer, setEditBuyer] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setOffset(0);
@@ -60,6 +76,44 @@ export default function BuyersPage() {
       toast.success("Buyer deleted");
     } catch {
       toast.error("Failed to delete buyer");
+    }
+  }
+
+  function openEdit(buyer: any) {
+    setEditBuyer(buyer);
+    setEditForm({
+      fullName: buyer.full_name,
+      email: buyer.email,
+      phone: buyer.phone,
+      emiratesId: buyer.emirates_id,
+      passportNumber: buyer.passport_number,
+      nationality: buyer.nationality,
+      address: buyer.address,
+    });
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editBuyer) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/buyers/${editBuyer.id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        toast.success("Buyer updated");
+        setEditBuyer(null);
+        fetchBuyers(offset);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || tc("error"));
+      }
+    } catch {
+      toast.error(tc("error"));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -108,73 +162,48 @@ export default function BuyersPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {buyers.map((buyer: any) => (
-              <Card key={buyer.id} className="group hover:shadow-md transition-shadow">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-primary">
-                        {buyer.full_name?.charAt(0)?.toUpperCase() || "?"}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-base truncate">{buyer.full_name}</p>
-                      {buyer.nationality && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Globe className="h-3 w-3" />
-                          <span>{buyer.nationality}</span>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Nationality</TableHead>
+                    <TableHead>Emirates ID</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {buyers.map((buyer: any) => (
+                    <TableRow key={buyer.id}>
+                      <TableCell className="font-medium">{buyer.full_name}</TableCell>
+                      <TableCell>{buyer.phone}</TableCell>
+                      <TableCell>{buyer.email || "—"}</TableCell>
+                      <TableCell>{buyer.nationality || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{buyer.emirates_id || "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Link href={`/${locale}/sales?buyerId=${buyer.id}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="View transactions">
+                              <ShoppingCart className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(buyer)} title="Edit">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteBuyer(buyer.id)} title="Delete">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground/60" />
-                      <span>{buyer.phone}</span>
-                    </div>
-                    {buyer.email && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground/60" />
-                        <span className="truncate">{buyer.email}</span>
-                      </div>
-                    )}
-                    {buyer.emirates_id && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{t("emiratesId")}</span>
-                        <span className="font-mono text-xs">{buyer.emirates_id}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t mt-3">
-                    <Link href={`/${locale}/sales?buyerId=${buyer.id}`}>
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        <ShoppingCart className="h-3.5 w-3.5" />
-                        View Transactions
-                      </Button>
-                    </Link>
-                    <div className="flex items-center gap-1">
-                      <Link href={`/${locale}/buyers/${buyer.id}`}>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={() => deleteBuyer(buyer.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {total > limit && (
@@ -204,6 +233,48 @@ export default function BuyersPage() {
           )}
         </>
       )}
+
+      <Dialog open={!!editBuyer} onOpenChange={(open) => !open && setEditBuyer(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Buyer</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input value={editForm.fullName || ""} onChange={(e) => setEditForm({...editForm, fullName: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input value={editForm.phone || ""} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={editForm.email || ""} onChange={(e) => setEditForm({...editForm, email: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Emirates ID</Label>
+              <Input value={editForm.emiratesId || ""} onChange={(e) => setEditForm({...editForm, emiratesId: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Passport Number</Label>
+              <Input value={editForm.passportNumber || ""} onChange={(e) => setEditForm({...editForm, passportNumber: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nationality</Label>
+              <Input value={editForm.nationality || ""} onChange={(e) => setEditForm({...editForm, nationality: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input value={editForm.address || ""} onChange={(e) => setEditForm({...editForm, address: e.target.value})} />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}</Button>
+              <Button type="button" variant="outline" onClick={() => setEditBuyer(null)}>{tc("cancel")}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

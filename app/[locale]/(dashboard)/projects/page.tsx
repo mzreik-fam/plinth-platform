@@ -2,7 +2,6 @@
 
 import {useEffect, useState} from "react";
 import {useLocale} from "next-intl";
-import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -15,10 +14,23 @@ import {
 } from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {Plus, FolderKanban, Loader2, MapPin, Building2, Pencil, Trash2} from "lucide-react";
 import {toast} from "sonner";
-
-
 
 export default function ProjectsPage() {
   const locale = useLocale();
@@ -27,6 +39,10 @@ export default function ProjectsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({name: "", location: "", area: ""});
   const [saving, setSaving] = useState(false);
+
+  const [editProject, setEditProject] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -73,6 +89,41 @@ export default function ProjectsPage() {
       toast.success("Project deleted");
     } catch {
       toast.error("Failed to delete project");
+    }
+  }
+
+  function openEdit(project: any) {
+    setEditProject(project);
+    setEditForm({
+      name: project.name,
+      location: project.location,
+      area: project.area,
+      status: project.status,
+    });
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editProject) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/projects/${editProject.id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        toast.success("Project updated");
+        setEditProject(null);
+        fetchProjects();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to update project");
+      }
+    } catch {
+      toast.error("Failed to update project");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -147,55 +198,96 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project: any) => (
-            <Card key={project.id} className="group hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Building2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <Badge variant={project.status === "active" ? "default" : "secondary"} className="text-xs">
-                    {project.status}
-                  </Badge>
-                </div>
-
-                <p className="font-semibold text-base mb-1">{project.name}</p>
-
-                <div className="space-y-1.5">
-                  {project.location && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
-                      <span>{project.location}</span>
-                    </div>
-                  )}
-                  {project.area && (
-                    <div className="text-sm text-muted-foreground">
-                      Area: {project.area}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center justify-between pt-3 border-t mt-3">
-                  <Link href={`/${locale}/projects/${project.id}`}>
-                    <Button variant="ghost" size="sm" className="gap-1">
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    onClick={() => deleteProject(project.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Area</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projects.map((project: any) => (
+                  <TableRow key={project.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        {project.name}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {project.location ? (
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {project.location}
+                        </div>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>{project.area || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={project.status === "active" ? "default" : "secondary"} className="text-xs">
+                        {project.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(project)} title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteProject(project.id)} title="Delete">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
+
+      <Dialog open={!!editProject} onOpenChange={(open) => !open && setEditProject(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Project Name</Label>
+              <Input value={editForm.name || ""} onChange={(e) => setEditForm({...editForm, name: e.target.value})} required className="h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Location</Label>
+              <Input value={editForm.location || ""} onChange={(e) => setEditForm({...editForm, location: e.target.value})} className="h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Area</Label>
+              <Input value={editForm.area || ""} onChange={(e) => setEditForm({...editForm, area: e.target.value})} className="h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm({...editForm, status: v})}>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={editSaving} className="h-11 px-6">
+                {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+              </Button>
+              <Button type="button" variant="outline" className="h-11 px-6" onClick={() => setEditProject(null)}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

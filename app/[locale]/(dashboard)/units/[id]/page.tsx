@@ -9,7 +9,7 @@ import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ArrowLeft, Send, Loader2, ImageIcon, FileText} from "lucide-react";
+import {ArrowLeft, Send, Loader2, ImageIcon, FileText, X, Trash2} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 import {
@@ -36,10 +36,82 @@ export default function UnitDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   useEffect(() => {
     fetchUnit();
   }, [id]);
+
+  async function uploadFile(file: File, folder: string) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+    formData.append("entityId", id as string);
+    const res = await fetch("/api/upload", {method: "POST", body: formData});
+    if (!res.ok) throw new Error("Upload failed");
+    return await res.json();
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const data = await uploadFile(file, "units/images");
+      const images = unit.images || [];
+      const updated = [...images, data.file];
+      await fetch(`/api/units/${id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({images: updated}),
+      });
+      fetchUnit();
+      toast.success("Image uploaded");
+    } catch {
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDoc(true);
+    try {
+      const data = await uploadFile(file, "units/documents");
+      const docs = unit.documents || [];
+      const updated = [...docs, data.file];
+      await fetch(`/api/units/${id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({documents: updated}),
+      });
+      fetchUnit();
+      toast.success("Document uploaded");
+    } catch {
+      toast.error("Failed to upload document");
+    } finally {
+      setUploadingDoc(false);
+    }
+  }
+
+  async function deleteFile(key: string, type: "images" | "documents") {
+    try {
+      await fetch("/api/upload", {method: "DELETE", headers: {"Content-Type": "application/json"}, body: JSON.stringify({key})});
+      const updated = (unit[type] || []).filter((f: any) => f.key !== key);
+      await fetch(`/api/units/${id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({[type]: updated}),
+      });
+      fetchUnit();
+      toast.success("Deleted");
+    } catch {
+      toast.error("Failed to delete");
+    }
+  }
 
   async function fetchUnit() {
     try {
@@ -246,7 +318,7 @@ export default function UnitDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Images Placeholder */}
+      {/* Images */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -256,17 +328,27 @@ export default function UnitDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="aspect-square rounded-lg bg-muted flex items-center justify-center border border-dashed">
-                <ImageIcon className="h-6 w-6 text-muted-foreground/40" />
+            {(unit.images || []).map((img: any) => (
+              <div key={img.key} className="relative aspect-square rounded-lg overflow-hidden border group">
+                <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                <button
+                  onClick={() => deleteFile(img.key, "images")}
+                  className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </div>
             ))}
+            <label className="aspect-square rounded-lg bg-muted flex flex-col items-center justify-center border border-dashed cursor-pointer hover:bg-muted/80 transition-colors">
+              {uploadingImage ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> : <ImageIcon className="h-6 w-6 text-muted-foreground/40" />}
+              <span className="text-xs text-muted-foreground mt-1">Upload</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
+            </label>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">Image upload coming soon. Contact support to add unit images.</p>
         </CardContent>
       </Card>
 
-      {/* Documents Placeholder */}
+      {/* Documents */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -276,13 +358,28 @@ export default function UnitDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-dashed">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Floor Plan.pdf</p>
-                <p className="text-xs text-muted-foreground">Document upload coming soon</p>
+            {(unit.documents || []).map((doc: any) => (
+              <div key={doc.key} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline truncate block">
+                    {doc.name}
+                  </a>
+                  <p className="text-xs text-muted-foreground">{(doc.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteFile(doc.key, "documents")}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
+            ))}
+            <label className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-dashed cursor-pointer hover:bg-muted/80 transition-colors">
+              {uploadingDoc ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : <FileText className="h-5 w-5 text-muted-foreground" />}
+              <div className="flex-1">
+                <p className="text-sm font-medium">Upload Document</p>
+                <p className="text-xs text-muted-foreground">PDF, Word (max 10MB)</p>
+              </div>
+              <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleDocUpload} disabled={uploadingDoc} />
+            </label>
           </div>
         </CardContent>
       </Card>
