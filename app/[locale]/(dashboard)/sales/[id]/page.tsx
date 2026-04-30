@@ -13,6 +13,15 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {ArrowLeft, Copy, FileText, KeyRound, AlertTriangle} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {Skeleton} from "@/components/ui/skeleton";
 
 const statusColors: Record<string, string> = {
   eoi: "warning",

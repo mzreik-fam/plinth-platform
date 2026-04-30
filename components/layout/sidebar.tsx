@@ -51,12 +51,21 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    fetch("/api/users/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.user) setUser(data.user);
-      })
-      .catch(() => {});
+    // Cache user in sessionStorage to avoid refetching on every navigation
+    const cachedUser = sessionStorage.getItem("plinth_user");
+    if (cachedUser) {
+      try { setUser(JSON.parse(cachedUser)); } catch {}
+    } else {
+      fetch("/api/users/me")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.user) {
+            setUser(data.user);
+            sessionStorage.setItem("plinth_user", JSON.stringify(data.user));
+          }
+        })
+        .catch(() => {});
+    }
 
     fetch("/api/notifications?unread=true")
       .then((r) => (r.ok ? r.json() : {notifications: []}))

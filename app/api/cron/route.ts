@@ -88,15 +88,7 @@ export async function GET(request: NextRequest) {
           const dueDate = new Date(bookingDate);
           dueDate.setDate(dueDate.getDate() + milestone.due_days_from_booking);
 
-          // Check if payment for this milestone is already recorded
-          const existingPayment = await sql`
-            SELECT COALESCE(SUM(amount), 0) as paid
-            FROM payments
-            WHERE transaction_id = ${tx.transaction_id}
-            AND status = 'confirmed'
-          `;
-
-          const totalPaid = Number(existingPayment[0]?.paid || 0);
+          const totalPaid = paid;
 
           // If not fully paid and due date is within 7 days
           if (totalPaid < totalPrice && dueDate > new Date() && dueDate < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)) {

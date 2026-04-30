@@ -68,55 +68,27 @@ export async function GET(request: NextRequest) {
     WHERE (cp.paid IS NULL OR cp.paid < tm.total_price)
   `;
 
-  // Pending approvals (units waiting for approval)
-  const pendingApprovals = await sql`
-    SELECT COUNT(*) as count FROM unit_approvals
-    WHERE status = 'pending'
-  `;
-
-  // Active handovers
-  const activeHandovers = await sql`
-    SELECT COUNT(*) as count FROM handovers
-    WHERE status NOT IN ('completed')
-  `;
-
-  // Active terminations
-  const activeTerminations = await sql`
-    SELECT COUNT(*) as count FROM termination_cases
-    WHERE status = 'active'
-  `;
-
-  // Open snagging tickets
-  const openSnagging = await sql`
-    SELECT COUNT(*) as count FROM snagging_tickets
-    WHERE status IN ('open', 'in_progress')
-  `;
-
-  // Total penalties
-  const penaltyStats = await sql`
+  // Combined counts: pending approvals, active handovers, terminations, snagging, penalties, notifications
+  const combinedStats = await sql`
     SELECT
-      COUNT(*) as count,
-      COALESCE(SUM(penalty_amount), 0) as total
-    FROM penalties
-    WHERE status = 'active'
-  `;
-
-  // Recent notifications
-  const notifications = await sql`
-    SELECT COUNT(*) as unread_count
-    FROM notifications
-    WHERE user_id = ${auth.userId} AND is_read = false
+      (SELECT COUNT(*) FROM unit_approvals WHERE status = 'pending') as pending_approvals,
+      (SELECT COUNT(*) FROM handovers WHERE status NOT IN ('completed')) as active_handovers,
+      (SELECT COUNT(*) FROM termination_cases WHERE status = 'active') as active_terminations,
+      (SELECT COUNT(*) FROM snagging_tickets WHERE status IN ('open', 'in_progress')) as open_snagging,
+      (SELECT COALESCE(SUM(penalty_amount), 0) FROM penalties WHERE status = 'active') as penalty_total,
+      (SELECT COUNT(*) FROM penalties WHERE status = 'active') as penalty_count,
+      (SELECT COUNT(*) FROM notifications WHERE user_id = ${auth.userId} AND is_read = false) as unread_count
   `;
 
   return NextResponse.json({
     units: unitStats[0],
     sales: salesStats[0],
     upcomingPayments: Number(upcomingPaymentsResult[0]?.count) || 0,
-    pendingApprovals: Number(pendingApprovals[0]?.count) || 0,
-    activeHandovers: Number(activeHandovers[0]?.count) || 0,
-    activeTerminations: Number(activeTerminations[0]?.count) || 0,
-    openSnagging: Number(openSnagging[0]?.count) || 0,
-    penalties: penaltyStats[0],
-    notifications: { unread: Number(notifications[0]?.unread_count) || 0 },
+    pendingApprovals: Number(combinedStats[0]?.pending_approvals) || 0,
+    activeHandovers: Number(combinedStats[0]?.active_handovers) || 0,
+    activeTerminations: Number(combinedStats[0]?.active_terminations) || 0,
+    openSnagging: Number(combinedStats[0]?.open_snagging) || 0,
+    penalties: { count: Number(combinedStats[0]?.penalty_count) || 0, total: Number(combinedStats[0]?.penalty_total) || 0 },
+    notifications: { unread: Number(combinedStats[0]?.unread_count) || 0 },
   });
 }

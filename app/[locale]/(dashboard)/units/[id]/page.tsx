@@ -12,6 +12,15 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {ArrowLeft, Send, Loader2} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {Skeleton} from "@/components/ui/skeleton";
 
 export default function UnitDetailPage() {
   const t = useTranslations("units");
@@ -76,11 +85,34 @@ export default function UnitDetailPage() {
     }
   }
 
-  if (loading) return <div className="text-muted-foreground">{tc("loading")}</div>;
+  if (loading) return (
+    <div className="max-w-xl mx-auto space-y-6">
+      <Skeleton className="h-8 w-48" />
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </CardContent>
+      </Card>
+    </div>
+  );
   if (!unit) return <div className="text-muted-foreground">{tc("noData")}</div>;
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href={`/${locale}/units`}>Units</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{unit.unit_number}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <div className="flex items-center gap-2">
         <Link href={`/${locale}/units`}>
           <Button variant="ghost" size="icon">

@@ -3,6 +3,8 @@ import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
 
+import {z} from 'zod';
+
 async function getAuthUser() {
   const token = await getSessionCookie();
   if (!token) return null;
@@ -12,6 +14,16 @@ async function getAuthUser() {
     return null;
   }
 }
+
+const createBuyerSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().min(1, 'Phone is required'),
+  emiratesId: z.string().optional(),
+  passportNumber: z.string().optional(),
+  nationality: z.string().optional(),
+  address: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   const auth = await getAuthUser();
@@ -58,18 +70,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const {fullName, email, phone, emiratesId, passportNumber, nationality, address} = body;
+    const data = createBuyerSchema.parse(body);
 
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
     const result = await sql`
       INSERT INTO buyers (tenant_id, full_name, email, phone, emirates_id, passport_number, nationality, address)
-      VALUES (${auth.tenantId}, ${fullName}, ${email || null}, ${phone}, ${emiratesId || null}, ${passportNumber || null}, ${nationality || null}, ${address || null})
+      VALUES (${auth.tenantId}, ${data.fullName}, ${data.email || null}, ${data.phone}, ${data.emiratesId || null}, ${data.passportNumber || null}, ${data.nationality || null}, ${data.address || null})
       RETURNING *
     `;
 
     return NextResponse.json({buyer: result[0]}, {status: 201});
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({error: error.errors[0]?.message || 'Invalid input'}, {status: 400});
+    }
     console.error('Create buyer error:', error);
     return NextResponse.json({error: 'Failed to create buyer'}, {status: 500});
   }
