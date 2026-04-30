@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState, useCallback, useRef} from "react";
+import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -67,14 +67,13 @@ export default function BuyersPage() {
     address: "",
   });
   const [saving, setSaving] = useState(false);
-  const searchRef = useRef(search);
-  searchRef.current = search;
+  const [initialLoad, setInitialLoad] = useState(true);
 
-  const fetchBuyers = useCallback(async (newOffset: number) => {
+  async function fetchBuyers(newOffset: number, searchQuery: string) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchRef.current) params.set("search", searchRef.current);
+      if (searchQuery) params.set("search", searchQuery);
       params.set("limit", String(limit));
       params.set("offset", String(newOffset));
       const res = await fetch(`/api/buyers?${params.toString()}`);
@@ -87,25 +86,16 @@ export default function BuyersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }
 
-  // Initial fetch
+  // Handle initial load and search changes
   useEffect(() => {
-    fetchBuyers(0);
-  }, [fetchBuyers]);
-
-  // Reset and fetch when search changes
-  const prevSearchRef = useRef(search);
-  useEffect(() => {
-    if (prevSearchRef.current !== search) {
-      prevSearchRef.current = search;
-      // Use requestAnimationFrame to avoid synchronous setState in effect
-      requestAnimationFrame(() => {
-        setOffset(0);
-        fetchBuyers(0);
-      });
+    if (initialLoad) {
+      setInitialLoad(false);
     }
-  }, [search, fetchBuyers]);
+    fetchBuyers(0, search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  }, [search]);
 
   async function deleteBuyer(id: string) {
     if (!confirm("Are you sure you want to delete this buyer?")) return;
@@ -116,7 +106,7 @@ export default function BuyersPage() {
         toast.error(data.error || "Failed to delete buyer");
         return;
       }
-      fetchBuyers(offset);
+      fetchBuyers(offset, search);
       toast.success("Buyer deleted");
     } catch {
       toast.error("Failed to delete buyer");
@@ -149,7 +139,7 @@ export default function BuyersPage() {
       if (res.ok) {
         toast.success("Buyer updated");
         setEditBuyer(null);
-        fetchBuyers(offset);
+        fetchBuyers(offset, search);
       } else {
         const data = await res.json();
         toast.error(data.error || tc("error"));
@@ -260,7 +250,7 @@ export default function BuyersPage() {
                   variant="outline"
                   size="sm"
                   disabled={offset === 0}
-                  onClick={() => fetchBuyers(offset - limit)}
+                  onClick={() => fetchBuyers(offset - limit, search)}
                 >
                   Previous
                 </Button>
@@ -268,7 +258,7 @@ export default function BuyersPage() {
                   variant="outline"
                   size="sm"
                   disabled={offset + limit >= total}
-                  onClick={() => fetchBuyers(offset + limit)}
+                  onClick={() => fetchBuyers(offset + limit, search)}
                 >
                   Next
                 </Button>

@@ -37,8 +37,9 @@ export default function LoginPage() {
 
       router.push(`/${locale}`);
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || t("loginFailed"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t("loginFailed");
+      setError(message);
     } finally {
       setLoading(false);
     }

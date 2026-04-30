@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState, useCallback} from "react";
+import {useEffect, useState} from "react";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -49,22 +49,23 @@ export default function ApprovalsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{id: string; status: "approved" | "rejected"} | null>(null);
 
-  const loadApprovals = useCallback(async () => {
-    const res = await fetch("/api/unit-approvals");
-    const data = await res.json();
-    setApprovals(data.approvals || []);
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
+    let cancelled = false;
     fetch("/api/users/me")
       .then((r) => r.json())
-      .then((data) => setUser(data.user));
+      .then((data) => {
+        if (!cancelled) setUser(data.user);
+      });
+    fetch("/api/unit-approvals")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) {
+          setApprovals(data.approvals || []);
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    loadApprovals();
-  }, [loadApprovals]);
 
   async function reviewApproval(id: string, status: "approved" | "rejected") {
     setProcessingId(id);
@@ -84,7 +85,9 @@ export default function ApprovalsPage() {
       toast.error("Failed to process");
     } finally {
       setProcessingId(null);
-      await loadApprovals();
+      const res = await fetch("/api/unit-approvals");
+      const data = await res.json();
+      setApprovals(data.approvals || []);
     }
   }
 

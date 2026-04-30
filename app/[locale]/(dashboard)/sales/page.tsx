@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState, useCallback, useRef} from "react";
+import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -51,15 +51,14 @@ export default function SalesPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
-  const filtersRef = useRef({search, statusFilter});
-  filtersRef.current = {search, statusFilter};
+  const [initialLoad, setInitialLoad] = useState(true);
 
-  const fetchTransactions = useCallback(async (newOffset: number) => {
+  async function fetchTransactions(newOffset: number, currentSearch: string, currentStatus: string) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filtersRef.current.search) params.set("search", filtersRef.current.search);
-      if (filtersRef.current.statusFilter) params.set("status", filtersRef.current.statusFilter);
+      if (currentSearch) params.set("search", currentSearch);
+      if (currentStatus) params.set("status", currentStatus);
       params.set("limit", String(limit));
       params.set("offset", String(newOffset));
       const res = await fetch(`/api/transactions?${params.toString()}`);
@@ -72,25 +71,16 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }
 
-  // Initial fetch
+  // Handle initial load and filter changes
   useEffect(() => {
-    fetchTransactions(0);
-  }, [fetchTransactions]);
-
-  // Reset and fetch when filters change
-  const prevFiltersRef = useRef({search, statusFilter});
-  useEffect(() => {
-    const prev = prevFiltersRef.current;
-    if (prev.search !== search || prev.statusFilter !== statusFilter) {
-      prevFiltersRef.current = {search, statusFilter};
-      requestAnimationFrame(() => {
-        setOffset(0);
-        fetchTransactions(0);
-      });
+    if (initialLoad) {
+      setInitialLoad(false);
     }
-  }, [search, statusFilter, fetchTransactions]);
+    fetchTransactions(0, search, statusFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  }, [search, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -216,7 +206,7 @@ export default function SalesPage() {
                   variant="outline"
                   size="sm"
                   disabled={offset === 0}
-                  onClick={() => fetchTransactions(offset - limit)}
+                  onClick={() => fetchTransactions(offset - limit, search, statusFilter)}
                 >
                   Previous
                 </Button>
@@ -224,7 +214,7 @@ export default function SalesPage() {
                   variant="outline"
                   size="sm"
                   disabled={offset + limit >= total}
-                  onClick={() => fetchTransactions(offset + limit)}
+                  onClick={() => fetchTransactions(offset + limit, search, statusFilter)}
                 >
                   Next
                 </Button>

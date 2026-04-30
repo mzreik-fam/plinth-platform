@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState, useCallback, useRef} from "react";
+import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -52,22 +52,21 @@ export default function UnitsPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
-  const filtersRef = useRef({search, statusFilter, projectFilter});
-  filtersRef.current = {search, statusFilter, projectFilter};
+  const [initialLoad, setInitialLoad] = useState(true);
 
-  const fetchProjects = useCallback(async () => {
+  async function fetchProjects() {
     const res = await fetch("/api/projects");
     const data = await res.json();
     setProjects(data.projects || []);
-  }, []);
+  }
 
-  const fetchUnits = useCallback(async (newOffset: number) => {
+  async function fetchUnits(newOffset: number, currentSearch: string, currentStatus: string, currentProject: string) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filtersRef.current.search) params.set("search", filtersRef.current.search);
-      if (filtersRef.current.statusFilter) params.set("status", filtersRef.current.statusFilter);
-      if (filtersRef.current.projectFilter) params.set("projectId", filtersRef.current.projectFilter);
+      if (currentSearch) params.set("search", currentSearch);
+      if (currentStatus) params.set("status", currentStatus);
+      if (currentProject) params.set("projectId", currentProject);
       params.set("limit", String(limit));
       params.set("offset", String(newOffset));
       const res = await fetch(`/api/units?${params.toString()}`);
@@ -80,26 +79,17 @@ export default function UnitsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }
 
-  // Initial fetch
+  // Initial fetch and fetch when filters change
   useEffect(() => {
-    fetchProjects();
-    fetchUnits(0);
-  }, [fetchProjects, fetchUnits]);
-
-  // Reset and fetch when filters change
-  const prevFiltersRef = useRef({search, statusFilter, projectFilter});
-  useEffect(() => {
-    const prev = prevFiltersRef.current;
-    if (prev.search !== search || prev.statusFilter !== statusFilter || prev.projectFilter !== projectFilter) {
-      prevFiltersRef.current = {search, statusFilter, projectFilter};
-      requestAnimationFrame(() => {
-        setOffset(0);
-        fetchUnits(0);
-      });
+    if (initialLoad) {
+      setInitialLoad(false);
+      fetchProjects();
     }
-  }, [search, statusFilter, projectFilter, fetchUnits]);
+    fetchUnits(0, search, statusFilter, projectFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  }, [search, statusFilter, projectFilter]);
 
   async function deleteUnit(id: string) {
     if (!confirm(tc("confirm"))) return;
@@ -110,7 +100,7 @@ export default function UnitsPage() {
         toast.error(data.error || tc("error"));
         return;
       }
-      fetchUnits(offset);
+      fetchUnits(offset, search, statusFilter, projectFilter);
     } catch {
       toast.error(tc("error"));
     }
@@ -260,7 +250,7 @@ export default function UnitsPage() {
                   variant="outline"
                   size="sm"
                   disabled={offset === 0}
-                  onClick={() => fetchUnits(offset - limit)}
+                  onClick={() => fetchUnits(offset - limit, search, statusFilter, projectFilter)}
                 >
                   Previous
                 </Button>
@@ -268,7 +258,7 @@ export default function UnitsPage() {
                   variant="outline"
                   size="sm"
                   disabled={offset + limit >= total}
-                  onClick={() => fetchUnits(offset + limit)}
+                  onClick={() => fetchUnits(offset + limit, search, statusFilter, projectFilter)}
                 >
                   Next
                 </Button>

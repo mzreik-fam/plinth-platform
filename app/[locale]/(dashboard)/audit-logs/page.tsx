@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {Loader2, ClipboardList, ChevronDown, ChevronRight} from "lucide-react";
+import {Loader2, ClipboardList} from "lucide-react";
 
 interface AuditLog {
   id: string;
@@ -26,22 +26,13 @@ interface AuditLog {
   created_at: string;
 }
 
-function formatDetails(log: AuditLog): { summary: string; changes?: string[]; entityName?: string } {
+function formatDetails(log: AuditLog): string {
   const details = log.details;
-  if (!details) return { summary: "—" };
+  if (!details) return "—";
 
   const { before, after } = details;
   const afterData = (after || {}) as Record<string, unknown>;
   const beforeData = (before || {}) as Record<string, unknown>;
-
-  // Extract entity name from details
-  const entityName = 
-    (afterData?.name as string) || 
-    (afterData?.full_name as string) || 
-    (afterData?.title as string) ||
-    (beforeData?.name as string) || 
-    (beforeData?.full_name as string) || 
-    (beforeData?.title as string);
 
   // Internal fields to hide
   const hiddenFields = ['id', 'tenant_id', 'created_at', 'updated_at', 'password_hash', 'invite_token', 'invite_expires_at'];
@@ -49,20 +40,17 @@ function formatDetails(log: AuditLog): { summary: string; changes?: string[]; en
   if (log.action === 'create' && after) {
     const keyFields = Object.entries(afterData)
       .filter(([key]) => !hiddenFields.includes(key))
-      .slice(0, 3)
+      .slice(0, 2)
       .map(([key, val]) => {
         if (val === null || val === undefined) return null;
-        const displayVal = typeof val === 'string' && val.length > 30 
-          ? val.slice(0, 30) + '...' 
+        const displayVal = typeof val === 'string' && val.length > 25 
+          ? val.slice(0, 25) + '...' 
           : String(val);
         return `${key.replace(/_/g, ' ')}: ${displayVal}`;
       })
       .filter(Boolean);
     
-    return { 
-      summary: keyFields.length > 0 ? keyFields.join(', ') : 'Created', 
-      entityName 
-    };
+    return keyFields.length > 0 ? keyFields.join(', ') : 'Created';
   }
 
   if ((log.action === 'update' || log.action === 'status_change') && before && after) {
@@ -82,21 +70,17 @@ function formatDetails(log: AuditLog): { summary: string; changes?: string[]; en
       }
     });
     
-    return { 
-      summary: changes.length > 0 ? changes[0] : 'Updated', 
-      changes: changes.slice(1),
-      entityName
-    };
+    return changes.length > 0 ? changes[0] : 'Updated';
   }
 
   if (log.action === 'delete' && before) {
-    return { 
-      summary: `Deleted: ${entityName || beforeData.id || 'Unknown'}`,
-      entityName 
-    };
+    const entityName = (beforeData?.name as string) || 
+                       (beforeData?.full_name as string) || 
+                       (beforeData?.title as string);
+    return `Deleted: ${entityName || beforeData.id || 'Unknown'}`;
   }
 
-  return { summary: "—", entityName };
+  return "—";
 }
 
 function getEntityDisplayName(log: AuditLog): string | null {
@@ -120,7 +104,6 @@ export default function AuditLogsPage() {
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const limit = 50;
 
   useEffect(() => {
@@ -140,16 +123,6 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function toggleExpand(id: string) {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
   }
 
   const actionColors: Record<string, string> = {
@@ -195,24 +168,22 @@ export default function AuditLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[140px]">Time</TableHead>
-                    <TableHead className="w-[100px]">Action</TableHead>
-                    <TableHead className="w-[200px]">Entity</TableHead>
-                    <TableHead className="min-w-[250px]">Details</TableHead>
-                    <TableHead className="w-[150px]">By</TableHead>
+                    <TableHead className="w-[160px] whitespace-nowrap">Time</TableHead>
+                    <TableHead className="w-[110px] whitespace-nowrap">Action</TableHead>
+                    <TableHead className="w-[120px] whitespace-nowrap">Entity Type</TableHead>
+                    <TableHead className="w-[180px] whitespace-nowrap">Entity Name</TableHead>
+                    <TableHead className="min-w-[200px] whitespace-nowrap">Details</TableHead>
+                    <TableHead className="w-[200px] whitespace-nowrap">User</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {logs.map((log) => {
-                    const { summary, changes } = formatDetails(log);
+                    const summary = formatDetails(log);
                     const entityName = getEntityDisplayName(log);
-                    const hasMoreDetails = (changes && changes.length > 0) || 
-                      (log.details && (log.details.before || log.details.after));
-                    const isExpanded = expandedRows.has(log.id);
                     
                     return (
-                      <TableRow key={log.id} className="group">
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
+                      <TableRow key={log.id}>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
                           {new Date(log.created_at).toLocaleString()}
                         </TableCell>
                         <TableCell>
@@ -220,70 +191,41 @@ export default function AuditLogsPage() {
                             {actionLabels[log.action] || log.action}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm whitespace-nowrap">
                           <span className="capitalize text-muted-foreground">{log.entity_type.replace(/_/g, ' ')}</span>
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
                           {entityName ? (
-                            <span className="text-foreground font-medium ml-1 block truncate max-w-[150px]" title={entityName}>
-                              · {entityName}
+                            <span className="font-medium truncate max-w-[170px] inline-block" title={entityName}>
+                              {entityName}
                             </span>
                           ) : log.entity_id ? (
-                            <span className="text-muted-foreground text-xs ml-1">
-                              · {log.entity_id.slice(0, 8)}
+                            <span className="text-muted-foreground text-xs font-mono">
+                              {log.entity_id.slice(0, 8)}
                             </span>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          <div className="flex items-start gap-2">
-                            <span className={hasMoreDetails ? "text-foreground" : "text-muted-foreground"}>
-                              {summary}
-                            </span>
-                            {hasMoreDetails && (
-                              <button
-                                onClick={() => toggleExpand(log.id)}
-                                className="text-muted-foreground hover:text-foreground p-0.5 rounded hover:bg-muted transition-colors"
-                                title={isExpanded ? "Collapse details" : "Expand details"}
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4" />
-                                )}
-                              </button>
-                            )}
-                          </div>
-                          {isExpanded && log.details && (
-                            <div className="mt-2 text-xs bg-muted p-3 rounded overflow-auto max-h-48">
-                              {log.details.before && (
-                                <div className="mb-2">
-                                  <span className="text-muted-foreground font-medium">Before:</span>
-                                  <pre className="mt-1 text-muted-foreground">
-                                    {JSON.stringify(log.details.before, null, 2)}
-                                  </pre>
-                                </div>
-                              )}
-                              {log.details.after && (
-                                <div>
-                                  <span className="text-muted-foreground font-medium">After:</span>
-                                  <pre className="mt-1 text-muted-foreground">
-                                    {JSON.stringify(log.details.after, null, 2)}
-                                  </pre>
-                                </div>
-                              )}
-                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm whitespace-nowrap">
+                          <span className="text-muted-foreground truncate max-w-[280px] inline-block" title={summary}>
+                            {summary}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
                           {log.user_name ? (
-                            <div className="flex flex-col">
-                              <span className="font-medium truncate max-w-[130px]" title={log.user_name}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate max-w-[120px]" title={log.user_name}>
                                 {log.user_name}
                               </span>
-                              <span className="text-xs text-muted-foreground truncate max-w-[130px]">
-                                {log.user_email}
-                              </span>
+                              {log.user_email && (
+                                <span className="text-xs text-muted-foreground truncate max-w-[130px]" title={log.user_email}>
+                                  ({log.user_email})
+                                </span>
+                              )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground font-mono text-xs">
                               {log.user_id?.slice(0, 8) || "—"}
                             </span>
                           )}
