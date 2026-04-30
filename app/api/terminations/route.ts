@@ -2,6 +2,8 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
+import {requireSuperAdmin} from '@/lib/permissions';
 
 async function getAuthUser() {
   const token = await getSessionCookie();
@@ -50,6 +52,13 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
+  // Super Admin only: termination execution
+  try {
+    requireSuperAdmin(auth);
+  } catch (e) {
+    return NextResponse.json({error: 'Forbidden: Only Super Admin can create termination cases'}, {status: 403});
+  }
+
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
   const body = await request.json();
@@ -90,6 +99,8 @@ export async function POST(request: NextRequest) {
   // Update transaction status
   await sql`UPDATE transactions SET status = 'terminated', updated_at = NOW() WHERE id = ${transaction_id}`;
   await sql`UPDATE units SET status = 'terminated', updated_at = NOW() WHERE id = ${unit_id}`;
+
+  await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'termination', resourceId: result[0].id, before: null, after: result[0] });
 
   return NextResponse.json({case: result[0]});
 }

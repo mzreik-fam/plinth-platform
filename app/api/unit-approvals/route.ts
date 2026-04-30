@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {notifyUnitApprovalRequested} from '@/lib/email';
 
 async function getAuthUser() {
@@ -97,6 +98,8 @@ export async function POST(request: NextRequest) {
       });
     }
   }
+
+  await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'unit_approval', resourceId: result[0].id, before: null, after: result[0] });
 
   return NextResponse.json({approval: result[0]});
 }

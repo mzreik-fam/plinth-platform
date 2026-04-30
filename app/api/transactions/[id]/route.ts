@@ -2,7 +2,9 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canCreateTransactions} from '@/lib/roles';
+import {requireSuperAdmin} from '@/lib/permissions';
 import {z} from 'zod';
 
 async function getAuthUser() {
@@ -65,7 +67,18 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     const body = await request.json();
     const data = updateTransactionSchema.parse(body);
 
+    // Super Admin only: cancellation
+    if (data.status === 'cancelled') {
+      try {
+        requireSuperAdmin(auth);
+      } catch (e) {
+        return NextResponse.json({error: 'Forbidden: Only Super Admin can cancel transactions'}, {status: 403});
+      }
+    }
+
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
+
+    const existing = await sql`SELECT * FROM transactions WHERE id = ${id}`;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -105,6 +118,9 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     if (result.length === 0) {
       return NextResponse.json({error: 'Transaction not found'}, {status: 404});
     }
+
+    const auditAction = data.status ? 'status_change' : 'update';
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: auditAction, resourceType: 'transaction', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
     // If status changed to confirmed, update unit to booked
     if (data.status === 'confirmed') {

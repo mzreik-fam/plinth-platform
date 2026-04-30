@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canCreateTransactions} from '@/lib/roles';
 import {z} from 'zod';
 import {randomBytes} from 'crypto';
@@ -124,6 +125,8 @@ export async function POST(request: NextRequest) {
 
     // Update unit status to pre_booked
     // Already done atomically above before INSERT
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'transaction', resourceId: result[0].id, before: null, after: result[0] });
 
     return NextResponse.json({transaction: result[0]}, {status: 201});
   } catch (error) {

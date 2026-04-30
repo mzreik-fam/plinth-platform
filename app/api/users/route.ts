@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canManageUsers} from '@/lib/roles';
 import {hashPassword} from '@/lib/auth';
 import {notifyUserInvitation} from '@/lib/email';
@@ -105,6 +106,8 @@ export async function POST(request: NextRequest) {
       fullName: data.fullName,
       inviteUrl,
     });
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'user', resourceId: result[0].id, before: null, after: result[0] });
 
     return NextResponse.json({user: result[0]}, {status: 201});
   } catch (error: any) {

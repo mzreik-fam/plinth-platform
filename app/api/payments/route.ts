@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canRecordPayments} from '@/lib/roles';
 import {notifyPaymentReceived} from '@/lib/email';
 
@@ -54,6 +55,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'payment', resourceId: result[0].id, before: null, after: result[0] });
+
     return NextResponse.json({payment: result[0]}, {status: 201});
   } catch (error) {
     console.error('Create payment error:', error);
@@ -74,6 +77,8 @@ export async function PATCH(request: NextRequest) {
     if (!id || !status) {
       return NextResponse.json({error: 'Payment ID and status required'}, {status: 400});
     }
+
+    const existing = await sql`SELECT * FROM payments WHERE id = ${id}`;
 
     const result = await sql`
       UPDATE payments
@@ -104,6 +109,9 @@ export async function PATCH(request: NextRequest) {
         });
       }
     }
+
+    const auditAction = status === 'confirmed' ? 'status_change' : 'update';
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: auditAction, resourceType: 'payment', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
     return NextResponse.json({payment: result[0]});
   } catch (err: any) {

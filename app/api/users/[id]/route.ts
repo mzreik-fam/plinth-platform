@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canManageUsers} from '@/lib/roles';
 
 import {z} from 'zod';
@@ -57,6 +58,8 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     const body = await request.json();
     const data = updateUserSchema.parse(body);
 
+    const existing = await sql`SELECT id, email, username, full_name, role, is_active, created_at FROM users WHERE id = ${id}`;
+
     const result = await sql`
       UPDATE users
       SET
@@ -72,6 +75,8 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     if (!result.length) {
       return NextResponse.json({error: 'User not found'}, {status: 404});
     }
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'update', resourceType: 'user', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
     return NextResponse.json({user: result[0]});
   } catch (error: any) {
@@ -93,6 +98,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
   try {
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
+    const existing = await sql`SELECT id, email, username, full_name, role, is_active, created_at FROM users WHERE id = ${id} AND tenant_id = ${auth.tenantId}`;
+
     const result = await sql`
       DELETE FROM users
       WHERE id = ${id}
@@ -103,6 +110,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     if (result.length === 0) {
       return NextResponse.json({error: 'User not found'}, {status: 404});
     }
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'delete', resourceType: 'user', resourceId: id, before: existing[0] || null, after: null });
 
     return NextResponse.json({success: true});
   } catch (error) {

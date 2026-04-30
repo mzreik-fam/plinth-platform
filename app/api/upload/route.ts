@@ -4,6 +4,7 @@ import {PutObjectCommand, DeleteObjectCommand} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 
 async function getAuthUser() {
   const token = await getSessionCookie();
@@ -53,6 +54,8 @@ export async function POST(request: NextRequest) {
     }));
 
     const url = R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${key}` : `${process.env.R2_ENDPOINT}/${R2_BUCKET}/${key}`;
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'upload', resourceId: key, before: null, after: { key, name: file.name, size: file.size, type: file.type, url } });
 
     return NextResponse.json({
       success: true,

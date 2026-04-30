@@ -3,6 +3,8 @@ import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
 
+import {logAudit} from '@/lib/audit';
+
 async function getAuthUser() {
   const token = await getSessionCookie();
   if (!token) return null;
@@ -21,6 +23,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
   try {
+    const existing = await sql`SELECT * FROM areas WHERE id = ${id}`;
+
     const result = await sql`
       DELETE FROM areas WHERE id = ${id} RETURNING id
     `;
@@ -28,6 +32,16 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     if (!result.length) {
       return NextResponse.json({error: 'Area not found'}, {status: 404});
     }
+
+    await logAudit({
+      tenantId: auth.tenantId,
+      userId: auth.userId,
+      action: 'delete',
+      resourceType: 'area',
+      resourceId: id,
+      before: existing[0] || null,
+      after: null,
+    });
 
     return NextResponse.json({success: true});
   } catch (error: any) {

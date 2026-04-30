@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(searchParams.get('offset') || '0');
 
   const logs = await sql`
-    SELECT id, action, entity_type, entity_id, details, performed_by, created_at
+    SELECT id, action, entity_type, entity_id, details, user_id, created_at
     FROM audit_logs
     ORDER BY created_at DESC
     LIMIT ${limit} OFFSET ${offset}

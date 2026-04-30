@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 
 async function getAuthUser() {
   const token = await getSessionCookie();
@@ -46,6 +47,8 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     const body = await request.json();
     const {name, areaId, status} = body;
 
+    const existing = await sql`SELECT * FROM projects WHERE id = ${id}`;
+
     const result = await sql`
       UPDATE projects
       SET
@@ -60,6 +63,9 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     if (!result.length) {
       return NextResponse.json({error: 'Project not found'}, {status: 404});
     }
+
+    const auditAction = status ? 'status_change' : 'update';
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: auditAction, resourceType: 'project', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
     return NextResponse.json({project: result[0]});
   } catch (error) {
@@ -76,6 +82,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
   try {
+    const existing = await sql`SELECT * FROM projects WHERE id = ${id}`;
+
     const result = await sql`
       DELETE FROM projects WHERE id = ${id} RETURNING id
     `;
@@ -83,6 +91,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     if (!result.length) {
       return NextResponse.json({error: 'Project not found'}, {status: 404});
     }
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'delete', resourceType: 'project', resourceId: id, before: existing[0] || null, after: null });
 
     return NextResponse.json({success: true});
   } catch (error: any) {

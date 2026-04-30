@@ -61,9 +61,11 @@ export default function TransactionDetailPage() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentForm, setPaymentForm] = useState({amount: "", paymentMethod: "bank_transfer", referenceNumber: "", notes: ""});
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<{role: string} | null>(null);
 
   useEffect(() => {
     fetchTransaction();
+    fetchCurrentUser();
   }, [id]);
 
   async function fetchTransaction() {
@@ -78,6 +80,20 @@ export default function TransactionDetailPage() {
       setLoading(false);
     }
   }
+
+  async function fetchCurrentUser() {
+    try {
+      const res = await fetch("/api/users/me");
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser(data.user);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
   async function updateStatus(newStatus: string) {
     const res = await fetch(`/api/transactions/${id}`, {
@@ -209,7 +225,7 @@ export default function TransactionDetailPage() {
               Start Handover
             </Button>
           )}
-          {(transaction.status === 'eoi' || transaction.status === 'booking_pending' || transaction.status === 'confirmed') && (
+          {(transaction.status === 'eoi' || transaction.status === 'booking_pending' || transaction.status === 'confirmed') && isSuperAdmin && (
             <AlertDialog>
               <AlertDialogTrigger>
                 <Button variant="destructive">
@@ -242,6 +258,8 @@ export default function TransactionDetailPage() {
                       if (res.ok) {
                         const data = await res.json();
                         window.location.href = `/${locale}/terminations/${data.case.id}`;
+                      } else if (res.status === 403) {
+                        toast.error("Only Super Admin can terminate transactions");
                       }
                     }}
                     className="bg-destructive text-destructive-foreground"
@@ -258,8 +276,20 @@ export default function TransactionDetailPage() {
           {transaction.status === 'booking_pending' && (
             <Button onClick={() => updateStatus('confirmed')}>Confirm Booking</Button>
           )}
-          {(transaction.status === 'eoi' || transaction.status === 'booking_pending') && (
-            <Button variant="destructive" onClick={() => updateStatus('cancelled')}>Cancel</Button>
+          {(transaction.status === 'eoi' || transaction.status === 'booking_pending') && isSuperAdmin && (
+            <Button variant="destructive" onClick={async () => {
+              const res = await fetch(`/api/transactions/${id}`, {
+                method: "PATCH",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({status: 'cancelled'}),
+              });
+              if (res.ok) {
+                fetchTransaction();
+                toast.success("Transaction cancelled");
+              } else if (res.status === 403) {
+                toast.error("Only Super Admin can cancel transactions");
+              }
+            }}>Cancel</Button>
           )}
           <Button variant="outline" onClick={() => setShowPaymentForm(!showPaymentForm)}>
             {t("recordPayment")}

@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {notifyUnitApproved} from '@/lib/email';
 
 async function getAuthUser() {
@@ -28,6 +29,8 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     return NextResponse.json({error: 'Status must be approved or rejected'}, {status: 400});
   }
 
+  const existing = await sql`SELECT * FROM unit_approvals WHERE id = ${id}`;
+
   const result = await sql`
     UPDATE unit_approvals
     SET
@@ -42,6 +45,9 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
   if (!result.length) {
     return NextResponse.json({error: 'Not found'}, {status: 404});
   }
+
+  const auditAction = status === 'approved' ? 'status_change' : 'update';
+  await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: auditAction, resourceType: 'unit_approval', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
   // Update unit status based on approval
   const unitId = result[0].unit_id;

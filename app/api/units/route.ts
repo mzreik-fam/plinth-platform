@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canCreateUnits} from '@/lib/roles';
 import {z} from 'zod';
 
@@ -102,6 +103,8 @@ export async function POST(request: NextRequest) {
         ON CONFLICT (tenant_id, unit_id) DO NOTHING
       `;
     }
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'unit', resourceId: result[0].id, before: null, after: result[0] });
 
     return NextResponse.json({unit: result[0]}, {status: 201});
   } catch (error) {

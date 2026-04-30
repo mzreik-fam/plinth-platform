@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 
 async function getAuthUser() {
   const token = await getSessionCookie();
@@ -62,6 +63,8 @@ export async function POST(request: NextRequest) {
       VALUES (${auth.tenantId}, ${name}, ${areaId || null})
       RETURNING *
     `;
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'project', resourceId: result[0].id, before: null, after: result[0] });
 
     return NextResponse.json({project: result[0]}, {status: 201});
   } catch {

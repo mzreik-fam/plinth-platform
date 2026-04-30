@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {canCreateUnits, canDeleteUnits} from '@/lib/roles';
 import {z} from 'zod';
 
@@ -59,6 +60,8 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
 
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
+    const existing = await sql`SELECT * FROM units WHERE id = ${id}`;
+
     const result = await sql`
       UPDATE units
       SET
@@ -78,6 +81,9 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
       return NextResponse.json({error: 'Unit not found'}, {status: 404});
     }
 
+    const auditAction = data.status ? 'status_change' : 'update';
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: auditAction, resourceType: 'unit', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
+
     return NextResponse.json({unit: result[0]});
   } catch (error) {
     console.error('Update unit error:', error);
@@ -96,6 +102,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
   try {
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
+    const existing = await sql`SELECT * FROM units WHERE id = ${id}`;
+
     const result = await sql`
       DELETE FROM units WHERE id = ${id} RETURNING id
     `;
@@ -103,6 +111,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     if (result.length === 0) {
       return NextResponse.json({error: 'Unit not found'}, {status: 404});
     }
+
+    await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'delete', resourceType: 'unit', resourceId: id, before: existing[0] || null, after: null });
 
     return NextResponse.json({success: true});
   } catch (error: any) {

@@ -2,6 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
+import {logAudit} from '@/lib/audit';
 import {notifyHandoverStarted} from '@/lib/email';
 
 async function getAuthUser() {
@@ -93,6 +94,8 @@ export async function POST(request: NextRequest) {
       unitNumber: buyerData[0].unit_number,
     });
   }
+
+  await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'handover', resourceId: result[0].id, before: null, after: result[0] });
 
   return NextResponse.json({handover: result[0]});
 }
