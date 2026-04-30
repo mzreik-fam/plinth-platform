@@ -4,9 +4,12 @@ import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Plus, Eye, Pencil, Trash2, Building2, Loader2} from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Plus, Eye, Pencil, Trash2, Building2, Loader2, Search} from "lucide-react";
+import {toast} from "sonner";
 
 const statusColors: Record<string, string> = {
   draft: "secondary",
@@ -22,17 +25,44 @@ export default function UnitsPage() {
   const tc = useTranslations("common");
   const locale = useLocale();
   const [units, setUnits] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [projectFilter, setProjectFilter] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
 
   useEffect(() => {
-    fetchUnits();
+    fetchProjects();
   }, []);
 
-  async function fetchUnits() {
+  useEffect(() => {
+    setOffset(0);
+    fetchUnits(0);
+  }, [search, statusFilter, projectFilter]);
+
+  async function fetchProjects() {
+    const res = await fetch("/api/projects");
+    const data = await res.json();
+    setProjects(data.projects || []);
+  }
+
+  async function fetchUnits(newOffset: number) {
+    setLoading(true);
     try {
-      const res = await fetch("/api/units");
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (statusFilter) params.set("status", statusFilter);
+      if (projectFilter) params.set("projectId", projectFilter);
+      params.set("limit", String(limit));
+      params.set("offset", String(newOffset));
+      const res = await fetch(`/api/units?${params.toString()}`);
       const data = await res.json();
       setUnits(data.units || []);
+      setTotal(data.total || 0);
+      setOffset(newOffset);
     } catch {
       // ignore
     } finally {
@@ -46,12 +76,12 @@ export default function UnitsPage() {
       const res = await fetch(`/api/units/${id}`, {method: "DELETE"});
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || tc("error"));
+        toast.error(data.error || tc("error"));
         return;
       }
-      fetchUnits();
+      fetchUnits(offset);
     } catch {
-      alert(tc("error"));
+      toast.error(tc("error"));
     }
   }
 
@@ -68,6 +98,44 @@ export default function UnitsPage() {
             {t("newUnit")}
           </Button>
         </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by unit number or project..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v || "")}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value="draft">{t("draft")}</SelectItem>
+            <SelectItem value="available">{t("available")}</SelectItem>
+            <SelectItem value="pre_booked">{t("pre_booked")}</SelectItem>
+            <SelectItem value="booked">{t("booked")}</SelectItem>
+            <SelectItem value="handed_over">{t("handed_over")}</SelectItem>
+            <SelectItem value="terminated">{t("terminated")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={projectFilter} onValueChange={(v) => setProjectFilter(v || "")}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All projects" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All projects</SelectItem>
+            {projects.map((p: any) => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -89,65 +157,94 @@ export default function UnitsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {units.map((unit: any) => (
-            <Card key={unit.id} className="group hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="font-semibold text-base">{unit.unit_number}</p>
-                    <p className="text-sm text-muted-foreground">{unit.project_name || "—"}</p>
-                  </div>
-                  <Badge variant={statusColors[unit.status] as any || "secondary"} className="shrink-0">
-                    {t(unit.status)}
-                  </Badge>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("type")}</span>
-                    <span className="capitalize">{t(unit.unit_type)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("price")}</span>
-                    <span className="font-medium">AED {Number(unit.price).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("area")}</span>
-                    <span>{unit.area_sqft ? `${unit.area_sqft.toLocaleString()} sqft` : "—"}</span>
-                  </div>
-                  {(unit.bedrooms || unit.bathrooms) && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Rooms</span>
-                      <span>{unit.bedrooms || 0} bd / {unit.bathrooms || 0} ba</span>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {units.map((unit: any) => (
+              <Card key={unit.id} className="group hover:shadow-md transition-shadow">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="font-semibold text-base">{unit.unit_number}</p>
+                      <p className="text-sm text-muted-foreground">{unit.project_name || "—"}</p>
                     </div>
-                  )}
-                </div>
+                    <Badge variant={statusColors[unit.status] as any || "secondary"} className="shrink-0">
+                      {t(unit.status)}
+                    </Badge>
+                  </div>
 
-                <div className="flex items-center gap-1 pt-3 border-t">
-                  <Link href={`/${locale}/units/${unit.id}`}>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Eye className="h-4 w-4" />
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("type")}</span>
+                      <span className="capitalize">{t(unit.unit_type)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("price")}</span>
+                      <span className="font-medium">AED {Number(unit.price).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("area")}</span>
+                      <span>{unit.area_sqft ? `${unit.area_sqft.toLocaleString()} sqft` : "—"}</span>
+                    </div>
+                    {(unit.bedrooms || unit.bathrooms) && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Rooms</span>
+                        <span>{unit.bedrooms || 0} bd / {unit.bathrooms || 0} ba</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 pt-3 border-t">
+                    <Link href={`/${locale}/units/${unit.id}`}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href={`/${locale}/units/${unit.id}?edit=1`}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      onClick={() => deleteUnit(unit.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </Link>
-                  <Link href={`/${locale}/units/${unit.id}?edit=1`}>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    onClick={() => deleteUnit(unit.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {total > limit && (
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {offset + 1}–{Math.min(offset + limit, total)} of {total}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset === 0}
+                  onClick={() => fetchUnits(offset - limit)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset + limit >= total}
+                  onClick={() => fetchUnits(offset + limit)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

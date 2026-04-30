@@ -28,12 +28,17 @@ const createUserSchema = z.object({
 export async function GET(request: NextRequest) {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-  if (!canManageUsers(auth.role)) return NextResponse.json({error: 'Forbidden'}, {status: 403});
-
-  await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
   const {searchParams} = new URL(request.url);
   const role = searchParams.get('role');
+
+  // Allow any authenticated user to query by role (needed for workflows like sales)
+  // Restrict full user list to managers only
+  if (!role && !canManageUsers(auth.role)) {
+    return NextResponse.json({error: 'Forbidden'}, {status: 403});
+  }
+
+  await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
   let query;
   if (role) {

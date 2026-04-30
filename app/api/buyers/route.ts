@@ -19,13 +19,37 @@ export async function GET(request: NextRequest) {
 
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-  const buyers = await sql`
-    SELECT id, full_name, email, phone, emirates_id, nationality, created_at
-    FROM buyers
-    ORDER BY created_at DESC
-  `;
+  const {searchParams} = new URL(request.url);
+  const search = searchParams.get('search');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+  const offset = parseInt(searchParams.get('offset') || '0');
 
-  return NextResponse.json({buyers});
+  let whereClauses: string[] = [];
+  let params: any[] = [];
+  let paramIndex = 1;
+
+  if (search) {
+    whereClauses.push(`(full_name ILIKE $${paramIndex++} OR phone ILIKE $${paramIndex++} OR emirates_id ILIKE $${paramIndex++})`);
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const buyers = await sql.query(`
+    SELECT id, full_name, email, phone, emirates_id, passport_number, nationality, address, created_at
+    FROM buyers
+    ${where}
+    ORDER BY created_at DESC
+    LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+  `, [...params, limit, offset]);
+
+  const countResult = await sql.query(`
+    SELECT COUNT(*) as total
+    FROM buyers
+    ${where}
+  `, params);
+
+  return NextResponse.json({buyers, total: parseInt(countResult[0]?.total || '0'), limit, offset});
 }
 
 export async function POST(request: NextRequest) {

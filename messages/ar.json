@@ -56,6 +56,7 @@
     "available": "متاح",
     "pre_booked": "محجوز مبدئياً",
     "booked": "محجوز",
+    "handed_over": "مسلم",
     "terminated": "منتهي"
   },
   "sales": {
@@ -72,6 +73,7 @@
     "booking_pending": "في انتظار الحجز",
     "confirmed": "مؤكد",
     "cancelled": "ملغى",
+    "terminated": "منتهي",
     "recordPayment": "تسجيل دفعة",
     "paymentAmount": "مبلغ الدفعة",
     "paymentMethod": "طريقة الدفع",
@@ -118,6 +120,7 @@
     "error": "حدث خطأ ما",
     "success": "نجاح",
     "confirm": "تأكيد",
-    "back": "رجوع"
+    "back": "رجوع",
+    "view": "عرض"
   }
 }

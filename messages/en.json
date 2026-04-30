@@ -56,6 +56,7 @@
     "available": "Available",
     "pre_booked": "Pre-Booked",
     "booked": "Booked",
+    "handed_over": "Handed Over",
     "terminated": "Terminated"
   },
   "sales": {
@@ -72,6 +73,7 @@
     "booking_pending": "Booking Pending",
     "confirmed": "Confirmed",
     "cancelled": "Cancelled",
+    "terminated": "Terminated",
     "recordPayment": "Record Payment",
     "paymentAmount": "Payment Amount",
     "paymentMethod": "Payment Method",
@@ -118,6 +120,7 @@
     "error": "Something went wrong",
     "success": "Success",
     "confirm": "Confirm",
-    "back": "Back"
+    "back": "Back",
+    "view": "View"
   }
 }

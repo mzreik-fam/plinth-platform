@@ -63,6 +63,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({error: 'Transaction not found or not confirmed'}, {status: 400});
   }
 
+  // Check for existing handover
+  const existing = await sql`SELECT id FROM handovers WHERE transaction_id = ${transaction_id}`;
+  if (existing.length > 0) {
+    return NextResponse.json({error: 'Handover already exists for this transaction'}, {status: 409});
+  }
+
   const result = await sql`
     INSERT INTO handovers (tenant_id, transaction_id, unit_id, status)
     VALUES (${auth.tenantId}, ${transaction_id}, ${unit_id}, 'pending_bcc')

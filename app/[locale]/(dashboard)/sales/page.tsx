@@ -4,9 +4,11 @@ import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Plus, Eye, ShoppingCart, Loader2} from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Plus, Eye, ShoppingCart, Loader2, Search} from "lucide-react";
 
 const statusColors: Record<string, string> = {
   eoi: "warning",
@@ -30,16 +32,30 @@ export default function SalesPage() {
   const locale = useLocale();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    setOffset(0);
+    fetchTransactions(0);
+  }, [search, statusFilter]);
 
-  async function fetchTransactions() {
+  async function fetchTransactions(newOffset: number) {
+    setLoading(true);
     try {
-      const res = await fetch("/api/transactions");
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (statusFilter) params.set("status", statusFilter);
+      params.set("limit", String(limit));
+      params.set("offset", String(newOffset));
+      const res = await fetch(`/api/transactions?${params.toString()}`);
       const data = await res.json();
       setTransactions(data.transactions || []);
+      setTotal(data.total || 0);
+      setOffset(newOffset);
     } catch {
       // ignore
     } finally {
@@ -62,6 +78,32 @@ export default function SalesPage() {
         </Link>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by buyer or unit..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v || "")}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value="eoi">{t("eoi")}</SelectItem>
+            <SelectItem value="booking_pending">{t("booking_pending")}</SelectItem>
+            <SelectItem value="confirmed">{t("confirmed")}</SelectItem>
+            <SelectItem value="cancelled">{t("cancelled")}</SelectItem>
+            <SelectItem value="terminated">{t("terminated")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -81,57 +123,86 @@ export default function SalesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {transactions.map((tx: any) => (
-            <Card
-              key={tx.id}
-              className={`hover:shadow-md transition-shadow ${statusBgColors[tx.status] || ""}`}
-            >
-              <CardContent className="p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <p className="font-semibold text-base truncate">{tx.buyer_name}</p>
-                      <Badge variant={statusColors[tx.status] as any || "secondary"} className="shrink-0">
-                        {t(tx.status)}
-                      </Badge>
+        <>
+          <div className="space-y-3">
+            {transactions.map((tx: any) => (
+              <Card
+                key={tx.id}
+                className={`hover:shadow-md transition-shadow ${statusBgColors[tx.status] || ""}`}
+              >
+                <CardContent className="p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <p className="font-semibold text-base truncate">{tx.buyer_name}</p>
+                        <Badge variant={statusColors[tx.status] as any || "secondary"} className="shrink-0">
+                          {t(tx.status)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{tx.unit_number}</span>
+                        <span className="text-border">·</span>
+                        <span className="capitalize">{tx.unit_type}</span>
+                        {tx.agent_name && (
+                          <>
+                            <span className="text-border">·</span>
+                            <span>{tx.agent_name}</span>
+                          </>
+                        )}
+                        <span className="text-border">·</span>
+                        <span>{new Date(tx.created_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{tx.unit_number}</span>
-                      <span className="text-border">·</span>
-                      <span className="capitalize">{tx.unit_type}</span>
-                      {tx.agent_name && (
-                        <>
-                          <span className="text-border">·</span>
-                          <span>{tx.agent_name}</span>
-                        </>
-                      )}
-                      <span className="text-border">·</span>
-                      <span>{new Date(tx.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right">
-                      <p className="font-semibold">AED {Number(tx.total_price).toLocaleString()}</p>
-                      {tx.eoi_amount ? (
-                        <p className="text-xs text-muted-foreground">EOI: AED {Number(tx.eoi_amount).toLocaleString()}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Total price</p>
-                      )}
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="text-right">
+                        <p className="font-semibold">AED {Number(tx.total_price).toLocaleString()}</p>
+                        {tx.eoi_amount ? (
+                          <p className="text-xs text-muted-foreground">EOI: AED {Number(tx.eoi_amount).toLocaleString()}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Total price</p>
+                        )}
+                      </div>
+                      <Link href={`/${locale}/sales/${tx.id}`}>
+                        <Button variant="ghost" size="sm" className="gap-1">
+                          <Eye className="h-4 w-4" />
+                          {tc("view")}
+                        </Button>
+                      </Link>
                     </div>
-                    <Link href={`/${locale}/sales/${tx.id}`}>
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        <Eye className="h-4 w-4" />
-                        {tc("view")}
-                      </Button>
-                    </Link>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {total > limit && (
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {offset + 1}–{Math.min(offset + limit, total)} of {total}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset === 0}
+                  onClick={() => fetchTransactions(offset - limit)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset + limit >= total}
+                  onClick={() => fetchTransactions(offset + limit)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

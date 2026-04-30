@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
 
   // Pending approvals (units waiting for approval)
   const pendingApprovals = await sql`
-    SELECT COUNT(*) as count FROM units
-    WHERE status = 'draft'
+    SELECT COUNT(*) as count FROM unit_approvals
+    WHERE status = 'pending'
   `;
 
   // Active handovers

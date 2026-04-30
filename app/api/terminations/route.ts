@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         ${caseId},
         ${step.step_number},
         ${step.step_name},
-        CURRENT_DATE + (${step.deadline_days} || ' days')::INTERVAL
+        CURRENT_DATE + (${step.deadline_days} * INTERVAL '1 day')
       )
     `;
   }

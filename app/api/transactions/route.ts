@@ -33,7 +33,33 @@ export async function GET(request: NextRequest) {
 
   await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
-  const transactions = await sql`
+  const {searchParams} = new URL(request.url);
+  const status = searchParams.get('status');
+  const search = searchParams.get('search');
+  const buyerId = searchParams.get('buyerId');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+  const offset = parseInt(searchParams.get('offset') || '0');
+
+  let whereClauses: string[] = [];
+  let params: any[] = [];
+  let paramIndex = 1;
+
+  if (status) {
+    whereClauses.push(`t.status = $${paramIndex++}`);
+    params.push(status);
+  }
+  if (buyerId) {
+    whereClauses.push(`t.buyer_id = $${paramIndex++}`);
+    params.push(buyerId);
+  }
+  if (search) {
+    whereClauses.push(`(b.full_name ILIKE $${paramIndex++} OR u.unit_number ILIKE $${paramIndex++})`);
+    params.push(`%${search}%`, `%${search}%`);
+  }
+
+  const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const transactions = await sql.query(`
     SELECT t.*,
       u.unit_number, u.unit_type,
       b.full_name as buyer_name, b.phone as buyer_phone,
@@ -42,10 +68,20 @@ export async function GET(request: NextRequest) {
     LEFT JOIN units u ON u.id = t.unit_id
     LEFT JOIN buyers b ON b.id = t.buyer_id
     LEFT JOIN users a ON a.id = t.agent_id
+    ${where}
     ORDER BY t.created_at DESC
-  `;
+    LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+  `, [...params, limit, offset]);
 
-  return NextResponse.json({transactions});
+  const countResult = await sql.query(`
+    SELECT COUNT(*) as total
+    FROM transactions t
+    LEFT JOIN units u ON u.id = t.unit_id
+    LEFT JOIN buyers b ON b.id = t.buyer_id
+    ${where}
+  `, params);
+
+  return NextResponse.json({transactions, total: parseInt(countResult[0]?.total || '0'), limit, offset});
 }
 
 export async function POST(request: NextRequest) {

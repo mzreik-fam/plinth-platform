@@ -34,26 +34,47 @@ export async function GET(request: NextRequest) {
 
   const {searchParams} = new URL(request.url);
   const status = searchParams.get('status');
+  const search = searchParams.get('search');
+  const projectId = searchParams.get('projectId');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+  const offset = parseInt(searchParams.get('offset') || '0');
 
-  let units;
+  let whereClauses: string[] = [];
+  let params: any[] = [];
+  let paramIndex = 1;
+
   if (status) {
-    units = await sql`
-      SELECT u.*, p.name as project_name
-      FROM units u
-      LEFT JOIN projects p ON p.id = u.project_id
-      WHERE u.status = ${status}
-      ORDER BY u.created_at DESC
-    `;
-  } else {
-    units = await sql`
-      SELECT u.*, p.name as project_name
-      FROM units u
-      LEFT JOIN projects p ON p.id = u.project_id
-      ORDER BY u.created_at DESC
-    `;
+    whereClauses.push(`u.status = $${paramIndex++}`);
+    params.push(status);
+  }
+  if (projectId) {
+    whereClauses.push(`u.project_id = $${paramIndex++}`);
+    params.push(projectId);
+  }
+  if (search) {
+    whereClauses.push(`(u.unit_number ILIKE $${paramIndex++} OR p.name ILIKE $${paramIndex++})`);
+    params.push(`%${search}%`, `%${search}%`);
   }
 
-  return NextResponse.json({units});
+  const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const units = await sql.query(`
+    SELECT u.*, p.name as project_name
+    FROM units u
+    LEFT JOIN projects p ON p.id = u.project_id
+    ${where}
+    ORDER BY u.created_at DESC
+    LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+  `, [...params, limit, offset]);
+
+  const countResult = await sql.query(`
+    SELECT COUNT(*) as total
+    FROM units u
+    LEFT JOIN projects p ON p.id = u.project_id
+    ${where}
+  `, params);
+
+  return NextResponse.json({units, total: parseInt(countResult[0]?.total || '0'), limit, offset});
 }
 
 export async function POST(request: NextRequest) {
