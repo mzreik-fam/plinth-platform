@@ -43,6 +43,7 @@ export default function EditBuyerPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!buyer) return;
     setSaving(true);
     const res = await fetch(`/api/buyers/${id}`, {
       method: "PATCH",
