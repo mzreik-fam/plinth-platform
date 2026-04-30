@@ -23,6 +23,7 @@ import {
   ChevronRight,
   FolderKanban,
   CalendarDays,
+  ClipboardList,
 } from "lucide-react";
 
 const mainNavItems = [
@@ -42,6 +43,7 @@ const processNavItems = [
 
 const adminNavItems = [
   {key: "users", href: "/users", icon: UserCircle},
+  {key: "audit_logs", href: "/audit-logs", icon: ClipboardList},
 ];
 
 export function Sidebar() {
