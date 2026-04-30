@@ -75,6 +75,11 @@ export default function TransactionDetailPage() {
   const [actionNotes, setActionNotes] = useState("");
   const [processingAction, setProcessingAction] = useState(false);
   const [wetSignatureChecked, setWetSignatureChecked] = useState(false);
+  
+  // P0-6: Handover dialog state
+  const [showHandoverDialog, setShowHandoverDialog] = useState(false);
+  const [bccDocumentUrl, setBccDocumentUrl] = useState("");
+  const [startingHandover, setStartingHandover] = useState(false);
 
   useEffect(() => {
     fetchTransaction();
@@ -107,6 +112,8 @@ export default function TransactionDetailPage() {
   }
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isProjectManager = currentUser?.role === 'project_manager';
+  const canInitiateHandover = isSuperAdmin || isProjectManager;
   const canConfirmPayments = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
   async function updateStatus(newStatus: string, options?: {signedAt?: string}) {
@@ -192,6 +199,43 @@ export default function TransactionDetailPage() {
     setActionNotes("");
   }
 
+  // P0-6: Start handover with BCC validation
+  async function startHandover(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bccDocumentUrl.trim()) {
+      toast.error("BCC document URL is required");
+      return;
+    }
+    
+    setStartingHandover(true);
+    try {
+      const res = await fetch("/api/handovers", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          transaction_id: id, 
+          unit_id: transaction.unit_id,
+          bcc_document_url: bccDocumentUrl.trim()
+        }),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setShowHandoverDialog(false);
+        setBccDocumentUrl("");
+        toast.success("Handover started successfully");
+        window.location.href = `/${locale}/handovers/${data.handover.id}`;
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to start handover");
+      }
+    } catch (error) {
+      toast.error("An error occurred while starting handover");
+    } finally {
+      setStartingHandover(false);
+    }
+  }
+
   function copyPortalLink() {
     if (!transaction?.portal_token) return;
     const url = `${window.location.origin}/${locale}/portal/${transaction.portal_token}`;
@@ -209,6 +253,20 @@ export default function TransactionDetailPage() {
   const hasSignature = transaction.signed_at != null || wetSignatureChecked;
   const hasConfirmedPayment = payments.some((p: any) => p.status === 'confirmed');
   const canConfirmBooking = transaction.status === 'booking_pending' && hasSignature && hasConfirmedPayment;
+  
+  // P0-6: Handover conditions
+  const milestones = transaction.payment_plan_milestones || [];
+  const finalMilestone = milestones.find((m: any) => 
+    m.label?.toLowerCase().includes('final') || 
+    m.label?.toLowerCase().includes('handover')
+  ) || milestones[milestones.length - 1];
+  
+  const finalMilestoneAmount = finalMilestone?.percent 
+    ? (Number(transaction.total_price) * Number(finalMilestone.percent)) / 100 
+    : 0;
+  const requiredBeforeHandover = Number(transaction.total_price) - finalMilestoneAmount;
+  const hasZeroBalance = totalPaid >= requiredBeforeHandover - 0.01;
+  const canStartHandover = transaction.status === 'confirmed' && hasZeroBalance && canInitiateHandover;
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -332,6 +390,66 @@ export default function TransactionDetailPage() {
         </Card>
       )}
 
+      {/* P0-6: Handover Requirements */}
+      {transaction.status === 'confirmed' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="h-4 w-4" />
+              Handover Requirements
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Role Check */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {canInitiateHandover ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                )}
+                <span className="text-sm font-medium">
+                  {canInitiateHandover ? 'Authorized to Initiate Handover' : 'Super Admin or Project Manager Required'}
+                </span>
+              </div>
+              {!canInitiateHandover && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  Only Super Admin or Project Manager can start handover.
+                </p>
+              )}
+            </div>
+            
+            {/* Zero Balance Check */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {hasZeroBalance ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <CreditCard className="h-4 w-4 text-amber-500" />
+                )}
+                <span className="text-sm font-medium">
+                  {hasZeroBalance ? 'Zero Balance (Excluding Final Installment)' : 'Outstanding Balance'}
+                </span>
+              </div>
+              <div className="pl-6 text-xs text-muted-foreground space-y-1">
+                <p>Total Paid: AED {totalPaid.toLocaleString()}</p>
+                <p>Required (excl. final): AED {requiredBeforeHandover.toLocaleString()}</p>
+                {!hasZeroBalance && (
+                  <p className="text-amber-600">
+                    Remaining: AED {(requiredBeforeHandover - totalPaid).toLocaleString()}
+                  </p>
+                )}
+                {finalMilestoneAmount > 0 && (
+                  <p className="text-muted-foreground">
+                    Final installment ({finalMilestone?.label || 'Final'}): AED {finalMilestoneAmount.toLocaleString()} — paid at handover
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Status Actions */}
       <Card>
         <CardHeader>
@@ -345,20 +463,29 @@ export default function TransactionDetailPage() {
             </Button>
           </Link>
           {transaction.status === 'confirmed' && (
-            <Button variant="outline" onClick={async () => {
-              const res = await fetch("/api/handovers", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({transaction_id: id, unit_id: transaction.unit_id}),
-              });
-              if (res.ok) {
-                const data = await res.json();
-                window.location.href = `/${locale}/handovers/${data.handover.id}`;
-              }
-            }}>
-              <KeyRound className="h-4 w-4 mr-1" />
-              Start Handover
-            </Button>
+            <div className="relative inline-block">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowHandoverDialog(true)}
+                disabled={!canStartHandover}
+                title={!canStartHandover 
+                  ? `Cannot start handover: ${!hasZeroBalance ? 'Outstanding balance must be paid. ' : ''}${!canInitiateHandover ? 'Only Super Admin or Project Manager can start handover.' : ''}`
+                  : 'Start handover process'
+                }
+              >
+                <KeyRound className="h-4 w-4 mr-1" />
+                Start Handover
+              </Button>
+              {!canStartHandover && (
+                <div className="absolute top-full left-0 mt-2 w-64 p-3 text-sm bg-popover text-popover-foreground rounded-md shadow-md border z-10">
+                  <p className="font-medium mb-1">Cannot start handover:</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    {!hasZeroBalance && <li>All payments except final installment must be confirmed</li>}
+                    {!canInitiateHandover && <li>Only Super Admin or Project Manager can initiate</li>}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
           {(transaction.status === 'eoi' || transaction.status === 'booking_pending' || transaction.status === 'confirmed') && isSuperAdmin && (
             <AlertDialog>
@@ -607,6 +734,66 @@ export default function TransactionDetailPage() {
               }
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* P0-6: Handover Start Dialog */}
+      <Dialog open={showHandoverDialog} onOpenChange={setShowHandoverDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start Handover Process</DialogTitle>
+            <DialogDescription>
+              Enter the Building Completion Certificate (BCC) document URL to initiate the handover process.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={startHandover} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bccDocumentUrl">BCC Document URL *</Label>
+              <Input
+                id="bccDocumentUrl"
+                value={bccDocumentUrl}
+                onChange={(e) => setBccDocumentUrl(e.target.value)}
+                placeholder="https://..."
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Upload the BCC to your document storage and provide the URL here.
+              </p>
+            </div>
+
+            <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+              <p className="font-medium">Handover Prerequisites Verified:</p>
+              <ul className="list-disc pl-4 text-muted-foreground">
+                <li className={hasZeroBalance ? 'text-green-600' : 'text-destructive'}>
+                  {hasZeroBalance ? '✓' : '✗'} Zero balance (excluding final installment)
+                </li>
+                <li className={canInitiateHandover ? 'text-green-600' : 'text-destructive'}>
+                  {canInitiateHandover ? '✓' : '✗'} Authorized role (Super Admin or Project Manager)
+                </li>
+              </ul>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowHandoverDialog(false);
+                  setBccDocumentUrl("");
+                }}
+                disabled={startingHandover}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={startingHandover || !hasZeroBalance}
+              >
+                {startingHandover ? "Starting..." : "Start Handover"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

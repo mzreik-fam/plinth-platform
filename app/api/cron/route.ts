@@ -1,9 +1,21 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
-import {notifyPaymentDue} from '@/lib/email';
+import {notifyPaymentDue, sendEOIReminder} from '@/lib/email';
+import {logAudit} from '@/lib/audit';
 
 // This endpoint is called by Vercel Cron or manually
 // It processes: EOI expiry, payment due reminders, penalty calculations
+
+// EOI expires 7 days after eoi_date
+const EOI_EXPIRY_DAYS = 7;
+
+// Reminder thresholds in hours before expiry
+const REMINDER_THRESHOLDS = [
+  {key: '72h', hours: 72},
+  {key: '48h', hours: 48},
+  {key: '24h', hours: 24},
+  {key: 'expiry', hours: 0},
+] as const;
 
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -20,6 +32,7 @@ export async function GET(request: NextRequest) {
 
   const results = {
     eoiExpired: 0,
+    eoiRemindersSent: 0,
     paymentReminders: 0,
     penaltiesCalculated: 0,
     errors: [] as string[],
@@ -36,24 +49,120 @@ export async function GET(request: NextRequest) {
       )
     `;
 
-    // 1. EOI Auto-Release: Find EOI transactions past expiry (7 days default)
-    const expiredEois = await sql`
-      SELECT t.id, t.unit_id, t.eoi_date, t.buyer_id, u.unit_number
+    // 1. EOI Reminders and Auto-Release
+    // Find all EOI transactions with their expiry calculation
+    const eoiTransactions = await sql`
+      SELECT 
+        t.id, 
+        t.unit_id, 
+        t.buyer_id, 
+        t.eoi_date, 
+        t.eoi_amount,
+        t.total_price,
+        t.agent_id,
+        t.reminders_sent,
+        t.tenant_id,
+        u.unit_number,
+        p.name as project_name,
+        b.email as buyer_email,
+        b.full_name as buyer_name,
+        b.phone as buyer_phone,
+        agent.email as agent_email
       FROM transactions t
       JOIN units u ON t.unit_id = u.id
+      JOIN projects p ON u.project_id = p.id
+      JOIN buyers b ON t.buyer_id = b.id
+      LEFT JOIN users agent ON t.agent_id = agent.id
       WHERE t.status = 'eoi'
-      AND t.eoi_date < NOW() - INTERVAL '7 days'
     `;
 
-    for (const eoi of expiredEois) {
+    const now = new Date();
+
+    for (const tx of eoiTransactions) {
       try {
-        // Cancel transaction
-        await sql`UPDATE transactions SET status = 'cancelled', updated_at = NOW() WHERE id = ${eoi.id}`;
-        // Release unit back to available
-        await sql`UPDATE units SET status = 'available', updated_at = NOW() WHERE id = ${eoi.unit_id}`;
-        results.eoiExpired++;
+        // Calculate expiry date (eoi_date + 7 days)
+        const eoiDate = new Date(tx.eoi_date);
+        const expiryDate = new Date(eoiDate);
+        expiryDate.setDate(expiryDate.getDate() + EOI_EXPIRY_DAYS);
+
+        const hoursUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+
+        // Check if expired
+        if (hoursUntilExpiry <= 0) {
+          // Cancel transaction
+          await sql`UPDATE transactions SET status = 'cancelled', updated_at = NOW() WHERE id = ${tx.id}`;
+          // Release unit back to available
+          await sql`UPDATE units SET status = 'available', updated_at = NOW() WHERE id = ${tx.unit_id}`;
+          
+          // Log to audit
+          await logAudit({
+            tenantId: tx.tenant_id,
+            userId: 'system',
+            action: 'status_change',
+            resourceType: 'transaction',
+            resourceId: tx.id,
+            before: {status: 'eoi'},
+            after: {status: 'cancelled', reason: 'eoi_expired'},
+          });
+
+          results.eoiExpired++;
+          continue;
+        }
+
+        // Check reminder thresholds
+        const remindersSent = (tx.reminders_sent as Record<string, string>) || {};
+        const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000'}/portal/${tx.portal_token}`;
+
+        for (const {key, hours} of REMINDER_THRESHOLDS) {
+          // Skip if reminder already sent
+          if (remindersSent[key]) continue;
+
+          // Check if we're within the window to send this reminder
+          // Send when hoursUntilExpiry <= threshold AND hoursUntilExpiry > (next lower threshold or 0)
+          const nextLowerHours = REMINDER_THRESHOLDS.find(t => t.hours < hours)?.hours ?? -1;
+          
+          if (hoursUntilExpiry <= hours && hoursUntilExpiry > nextLowerHours) {
+            // Send reminder email
+            if (tx.buyer_email) {
+              await sendEOIReminder({
+                to: tx.buyer_email,
+                cc: tx.agent_email || undefined,
+                buyerName: tx.buyer_name,
+                unitNumber: tx.unit_number,
+                projectName: tx.project_name,
+                eoiAmount: Number(tx.eoi_amount || 0),
+                hoursRemaining: Math.max(0, hoursUntilExpiry),
+                deadline: expiryDate.toLocaleDateString('en-AE', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+                portalUrl,
+              });
+
+              // Update reminders_sent JSONB
+              const updatedReminders = {
+                ...remindersSent,
+                [key]: new Date().toISOString(),
+              };
+              
+              await sql`
+                UPDATE transactions 
+                SET reminders_sent = ${JSON.stringify(updatedReminders)},
+                    updated_at = NOW()
+                WHERE id = ${tx.id}
+              `;
+
+              results.eoiRemindersSent++;
+            }
+            break; // Only send one reminder per transaction per cron run
+          }
+        }
       } catch (err: any) {
-        results.errors.push(`EOI expiry failed for ${eoi.id}: ${err.message}`);
+        results.errors.push(`EOI reminder failed for ${tx.id}: ${err.message}`);
       }
     }
 

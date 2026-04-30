@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   signed_at TIMESTAMPTZ,
   portal_token TEXT UNIQUE,
   notes TEXT,
+  reminders_sent JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -260,6 +261,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_token TEXT UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMPTZ;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS reminders_sent JSONB DEFAULT '{}';
 
 CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_areas_tenant ON areas(tenant_id);

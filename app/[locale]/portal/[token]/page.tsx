@@ -1,10 +1,11 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback} from "react";
 import {useParams} from "next/navigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Building2, CalendarDays} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Building2, CalendarDays, Upload, FileCheck, AlertCircle} from "lucide-react";
 
 const paymentMethodLabels: Record<string, string> = {
   bank_transfer: "Bank Transfer",
@@ -24,6 +25,15 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Upload state
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
+
   useEffect(() => {
     fetch(`/api/portal/${token}`)
       .then((r) => {
@@ -33,6 +43,10 @@ export default function PortalPage() {
       .then((data) => {
         setData(data);
         setLoading(false);
+        // Fetch documents if transaction exists
+        if (data.transaction?.id) {
+          fetchDocuments(data.transaction.id);
+        }
       })
       .catch(() => {
         setError("Invalid or expired portal link.");
@@ -40,12 +54,115 @@ export default function PortalPage() {
       });
   }, [token]);
 
+  const fetchDocuments = async (transactionId: string) => {
+    try {
+      const res = await fetch(`/api/portal/${token}/documents`);
+      if (res.ok) {
+        const docs = await res.json();
+        setUploadedDocs(docs);
+      }
+    } catch {
+      // Silently fail - documents are optional display
+    }
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      validateAndSetFile(files[0]);
+    }
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      validateAndSetFile(files[0]);
+    }
+  };
+
+  const validateAndSetFile = (file: File) => {
+    setUploadError("");
+    setUploadSuccess(false);
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Invalid file type. Please upload PDF, JPG, or PNG only.");
+      return;
+    }
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setUploadError("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setUploadFile(file);
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile) {
+      setUploadError("Please select a file to upload.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError("");
+    setUploadSuccess(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("token", token);
+      formData.append("description", uploadDescription);
+
+      const res = await fetch("/api/portal/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setUploadError(result.error || "Upload failed. Please try again.");
+      } else {
+        setUploadSuccess(true);
+        setUploadFile(null);
+        setUploadDescription("");
+        // Refresh documents list
+        if (data?.transaction?.id) {
+          fetchDocuments(data.transaction.id);
+        }
+      }
+    } catch {
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center">Loading...</div>;
   if (error) return <div className="p-8 text-center text-destructive">{error}</div>;
   if (!data) return null;
 
   const {transaction, payments, totalPaid, remainingBalance} = data;
   const milestones = transaction.payment_plan_milestones || [];
+
+  // Don't show upload for cancelled/terminated transactions
+  const canUpload = transaction.status !== 'cancelled' && transaction.status !== 'terminated';
 
   return (
     <div className="min-h-screen bg-muted/40 p-4">
@@ -103,6 +220,124 @@ export default function PortalPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Upload Section */}
+        {canUpload && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                Upload Payment Proof
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {uploadSuccess && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
+                  <FileCheck className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">Upload successful!</p>
+                    <p className="text-xs text-green-600">Your document has been sent for admin review.</p>
+                  </div>
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{uploadError}</p>
+                </div>
+              )}
+
+              {/* Drag and Drop Area */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`
+                  border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer
+                  ${isDragOver 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                  }
+                `}
+                onClick={() => document.getElementById('file-input')?.click()}
+              >
+                <input
+                  id="file-input"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {uploadFile ? (
+                    <span className="font-medium text-foreground">{uploadFile.name}</span>
+                  ) : (
+                    <>
+                      <span className="font-medium">Click to upload</span> or drag and drop
+                    </>
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PDF, JPG, PNG up to 10MB
+                </p>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Description (optional)</label>
+                <textarea
+                  value={uploadDescription}
+                  onChange={(e) => setUploadDescription(e.target.value)}
+                  placeholder="e.g., Payment for Installment 1 - Bank Transfer Ref #12345"
+                  className="w-full px-3 py-2 border rounded-md text-sm min-h-[80px] resize-none"
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {uploadDescription.length}/500 characters
+                </p>
+              </div>
+
+              {/* Upload Button */}
+              <Button
+                onClick={handleUpload}
+                disabled={!uploadFile || isUploading}
+                className="w-full"
+              >
+                {isUploading ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </>
+                )}
+              </Button>
+
+              {/* Uploaded Documents List */}
+              {uploadedDocs.length > 0 && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm font-medium mb-2">Previously Uploaded</p>
+                  <div className="space-y-2">
+                    {uploadedDocs.map((doc: any) => (
+                      <div key={doc.id} className="flex items-center gap-2 text-sm">
+                        <FileCheck className="h-4 w-4 text-green-600" />
+                        <span className="flex-1 truncate">{doc.file_name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {doc.category === 'proof_of_transfer' ? 'Payment Proof' : doc.category}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Payment Schedule */}
         {milestones.length > 0 && (
