@@ -9,7 +9,7 @@ import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ArrowLeft, Send, Loader2} from "lucide-react";
+import {ArrowLeft, Send, Loader2, ImageIcon, FileText} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 import {
@@ -163,6 +163,10 @@ export default function UnitDetailPage() {
                 </div>
               </div>
               <div className="space-y-2">
+                <Label>Features / Amenities</Label>
+                <Input value={form.features || ""} onChange={(e) => setForm({...form, features: e.target.value})} placeholder="e.g., Pool, Gym, Sea View" />
+              </div>
+              <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({...form, status: v})}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -205,6 +209,12 @@ export default function UnitDetailPage() {
                 <span className="text-muted-foreground">{t("bathrooms")}</span>
                 <span>{unit.bathrooms || "—"}</span>
               </div>
+              {unit.features && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Features</span>
+                  <span>{unit.features}</span>
+                </div>
+              )}
               <Button onClick={() => setEditMode(true)}>{tc("edit")}</Button>
               {unit.status === 'draft' && (
                 <Button variant="outline" disabled={requesting} onClick={async () => {
@@ -233,6 +243,47 @@ export default function UnitDetailPage() {
               )}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Images Placeholder */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            Unit Images
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="aspect-square rounded-lg bg-muted flex items-center justify-center border border-dashed">
+                <ImageIcon className="h-6 w-6 text-muted-foreground/40" />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">Image upload coming soon. Contact support to add unit images.</p>
+        </CardContent>
+      </Card>
+
+      {/* Documents Placeholder */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-dashed">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Floor Plan.pdf</p>
+                <p className="text-xs text-muted-foreground">Document upload coming soon</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
