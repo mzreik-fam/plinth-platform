@@ -1,0 +1,83 @@
+import {NextRequest, NextResponse} from 'next/server';
+import {sql} from '@/lib/db';
+import {verifyToken} from '@/lib/auth';
+import {getSessionCookie} from '@/lib/session';
+import {canManageUsers} from '@/lib/roles';
+import {hashPassword} from '@/lib/auth';
+import {z} from 'zod';
+
+async function getAuthUser() {
+  const token = await getSessionCookie();
+  if (!token) return null;
+  try {
+    return await verifyToken(token);
+  } catch {
+    return null;
+  }
+}
+
+const createUserSchema = z.object({
+  username: z.string().min(3),
+  email: z.string().email(),
+  password: z.string().min(6),
+  fullName: z.string().min(1),
+  role: z.enum(['super_admin', 'project_manager', 'admin', 'internal_agent']),
+});
+
+export async function GET(request: NextRequest) {
+  const auth = await getAuthUser();
+  if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+  if (!canManageUsers(auth.role)) return NextResponse.json({error: 'Forbidden'}, {status: 403});
+
+  await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
+
+  const {searchParams} = new URL(request.url);
+  const role = searchParams.get('role');
+
+  let query;
+  if (role) {
+    query = sql`
+      SELECT id, email, username, full_name, role, is_active, created_at
+      FROM users
+      WHERE role = ${role}
+      ORDER BY created_at DESC
+    `;
+  } else {
+    query = sql`
+      SELECT id, email, username, full_name, role, is_active, created_at
+      FROM users
+      ORDER BY created_at DESC
+    `;
+  }
+
+  const users = await query;
+  return NextResponse.json({users});
+}
+
+export async function POST(request: NextRequest) {
+  const auth = await getAuthUser();
+  if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+  if (!canManageUsers(auth.role)) return NextResponse.json({error: 'Forbidden'}, {status: 403});
+
+  try {
+    const body = await request.json();
+    const data = createUserSchema.parse(body);
+    const passwordHash = await hashPassword(data.password);
+
+    await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
+
+    const result = await sql`
+      INSERT INTO users (tenant_id, email, username, password_hash, full_name, role)
+      VALUES (${auth.tenantId}, ${data.email}, ${data.username}, ${passwordHash}, ${data.fullName}, ${data.role})
+      RETURNING id, email, username, full_name, role, is_active, created_at
+    `;
+
+    return NextResponse.json({user: result[0]}, {status: 201});
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return NextResponse.json({error: 'Username or email already exists'}, {status: 409});
+    }
+    console.error('Create user error:', error);
+    return NextResponse.json({error: 'Failed to create user'}, {status: 500});
+  }
+}
