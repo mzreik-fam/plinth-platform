@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  let whereClauses: string[] = [];
-  let params: any[] = [];
+  const whereClauses: string[] = [];
+  const params: any[] = [];
   let paramIndex = 1;
 
   if (status) {

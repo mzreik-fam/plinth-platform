@@ -7,6 +7,39 @@ import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Building2, CalendarDays, Upload, FileCheck, AlertCircle} from "lucide-react";
 
+interface PortalData {
+  transaction: {
+    id: string;
+    status: string;
+    project_name: string;
+    unit_number: string;
+    unit_type: string;
+    area_sqft?: number;
+    total_price: number;
+    booking_date?: string;
+    payment_plan_milestones?: Array<{
+      label: string;
+      percent: number;
+      due_days_from_booking: number;
+    }>;
+  };
+  payments: Array<{
+    id: string;
+    amount: number;
+    payment_method: string;
+    status: string;
+    created_at: string;
+  }>;
+  totalPaid: number;
+  remainingBalance: number;
+}
+
+interface UploadedDoc {
+  id: string;
+  file_name: string;
+  category: string;
+}
+
 const paymentMethodLabels: Record<string, string> = {
   bank_transfer: "Bank Transfer",
   cheque: "Cheque",
@@ -21,7 +54,7 @@ function capitalize(s: string) {
 export default function PortalPage() {
   const params = useParams();
   const token = params.token as string;
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,7 +65,7 @@ export default function PortalPage() {
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
 
   useEffect(() => {
     fetch(`/api/portal/${token}`)
@@ -323,7 +356,7 @@ export default function PortalPage() {
                 <div className="pt-4 border-t">
                   <p className="text-sm font-medium mb-2">Previously Uploaded</p>
                   <div className="space-y-2">
-                    {uploadedDocs.map((doc: any) => (
+                    {uploadedDocs.map((doc) => (
                       <div key={doc.id} className="flex items-center gap-2 text-sm">
                         <FileCheck className="h-4 w-4 text-green-600" />
                         <span className="flex-1 truncate">{doc.file_name}</span>
@@ -349,7 +382,7 @@ export default function PortalPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {milestones.map((m: any, i: number) => {
+              {milestones.map((m, i) => {
                 const dueDate = transaction.booking_date
                   ? new Date(new Date(transaction.booking_date).getTime() + m.due_days_from_booking * 24 * 60 * 60 * 1000)
                   : null;
@@ -378,7 +411,7 @@ export default function PortalPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {payments.length === 0 && <p className="text-sm text-muted-foreground">No payments yet.</p>}
-            {payments.map((p: any) => (
+            {payments.map((p) => (
               <div key={p.id} className="flex justify-between items-center py-2 border-b last:border-0">
                 <div>
                   <p className="text-sm font-medium">AED {Number(p.amount).toLocaleString()}</p>

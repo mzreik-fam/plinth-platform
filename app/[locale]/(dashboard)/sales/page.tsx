@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback, useRef} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -11,6 +11,18 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Plus, Eye, ShoppingCart, Loader2, Search} from "lucide-react";
 
 
+
+interface Transaction {
+  id: string;
+  buyer_name: string;
+  status: string;
+  unit_number: string;
+  unit_type: string;
+  agent_name?: string;
+  created_at: string;
+  total_price: number;
+  eoi_amount?: number;
+}
 
 const statusColors: Record<string, string> = {
   eoi: "warning",
@@ -32,25 +44,22 @@ export default function SalesPage() {
   const t = useTranslations("sales");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
+  const filtersRef = useRef({search, statusFilter});
+  filtersRef.current = {search, statusFilter};
 
-  useEffect(() => {
-    setOffset(0);
-    fetchTransactions(0);
-  }, [search, statusFilter]);
-
-  async function fetchTransactions(newOffset: number) {
+  const fetchTransactions = useCallback(async (newOffset: number) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
+      if (filtersRef.current.search) params.set("search", filtersRef.current.search);
+      if (filtersRef.current.statusFilter) params.set("status", filtersRef.current.statusFilter);
       params.set("limit", String(limit));
       params.set("offset", String(newOffset));
       const res = await fetch(`/api/transactions?${params.toString()}`);
@@ -63,7 +72,25 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTransactions(0);
+  }, [fetchTransactions]);
+
+  // Reset and fetch when filters change
+  const prevFiltersRef = useRef({search, statusFilter});
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (prev.search !== search || prev.statusFilter !== statusFilter) {
+      prevFiltersRef.current = {search, statusFilter};
+      requestAnimationFrame(() => {
+        setOffset(0);
+        fetchTransactions(0);
+      });
+    }
+  }, [search, statusFilter, fetchTransactions]);
 
   return (
     <div className="space-y-6">
@@ -127,7 +154,7 @@ export default function SalesPage() {
       ) : (
         <>
           <div className="space-y-3">
-            {transactions.map((tx: any) => (
+            {transactions.map((tx) => (
               <Card
                 key={tx.id}
                 className={`hover:shadow-md transition-shadow ${statusBgColors[tx.status] || ""}`}

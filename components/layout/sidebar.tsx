@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -26,9 +26,21 @@ import {
   ClipboardList,
   MapPin,
   Wallet,
+  LucideIcon,
 } from "lucide-react";
 
-const mainNavItems = [
+interface NavItemType {
+  key: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+interface User {
+  full_name?: string;
+  role?: string;
+}
+
+const mainNavItems: NavItemType[] = [
   {key: "dashboard", href: "", icon: LayoutDashboard},
   {key: "projects", href: "/projects", icon: FolderKanban},
   {key: "areas", href: "/areas", icon: MapPin},
@@ -38,25 +50,71 @@ const mainNavItems = [
   {key: "payment_plans", href: "/payment-plans", icon: CalendarDays},
 ];
 
-const processNavItems = [
+const processNavItems: NavItemType[] = [
   {key: "handovers", href: "/handovers", icon: KeyRound},
   {key: "terminations", href: "/terminations", icon: AlertTriangle},
   {key: "approvals", href: "/approvals", icon: ClipboardCheck},
   {key: "pending_payments", href: "/payments/pending", icon: Wallet},
 ];
 
-const adminNavItems = [
+const adminNavItems: NavItemType[] = [
   {key: "users", href: "/users", icon: UserCircle},
   {key: "audit_logs", href: "/audit-logs", icon: ClipboardList},
 ];
+
+function NavItem({item, locale, isActive, t, onClick}: {item: NavItemType; locale: string; isActive: (href: string) => boolean; t: (key: string) => string; onClick?: () => void}) {
+  const Icon = item.icon;
+  const active = isActive(item.href);
+  const href = `/${locale}${item.href}`;
+
+  return (
+    <Link
+      key={item.key}
+      href={href}
+      onClick={onClick}
+      className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+      }`}
+    >
+      <Icon className={`h-[18px] w-[18px] transition-colors ${active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"}`} />
+      <span className="flex-1">{t(item.key)}</span>
+      {active && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
+    </Link>
+  );
+}
+
+function NavSection({title, items, locale, isActive, t, onItemClick}: {title?: string; items: NavItemType[]; locale: string; isActive: (href: string) => boolean; t: (key: string) => string; onItemClick?: () => void}) {
+  return (
+    <div className="space-y-0.5">
+      {title && (
+        <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          {title}
+        </p>
+      )}
+      {items.map((item) => (
+        <NavItem key={item.key} item={item} locale={locale} isActive={isActive} t={t} onClick={onItemClick} />
+      ))}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const t = useTranslations("navigation");
   const locale = useLocale();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const checkIsActive = useCallback((href: string) => {
+    const fullPath = `/${locale}${href}`;
+    if (href === "") {
+      return pathname === fullPath || pathname === `/${locale}`;
+    }
+    return pathname === fullPath || pathname.startsWith(fullPath + "/");
+  }, [locale, pathname]);
 
   useEffect(() => {
     // Cache user in sessionStorage to avoid refetching on every navigation
@@ -88,52 +146,6 @@ export function Sidebar() {
     window.location.href = `/${locale}/login`;
   }
 
-  const isActive = (href: string) => {
-    const fullPath = `/${locale}${href}`;
-    if (href === "") {
-      return pathname === fullPath || pathname === `/${locale}`;
-    }
-    return pathname === fullPath || pathname.startsWith(fullPath + "/");
-  };
-
-  function NavItem({item, onClick}: {item: {key: string; href: string; icon: any}; onClick?: () => void}) {
-    const Icon = item.icon;
-    const active = isActive(item.href);
-    const href = `/${locale}${item.href}`;
-
-    return (
-      <Link
-        key={item.key}
-        href={href}
-        onClick={onClick}
-        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-          active
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-        }`}
-      >
-        <Icon className={`h-[18px] w-[18px] transition-colors ${active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"}`} />
-        <span className="flex-1">{t(item.key)}</span>
-        {active && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
-      </Link>
-    );
-  }
-
-  function NavSection({title, items, onItemClick}: {title?: string; items: typeof mainNavItems; onItemClick?: () => void}) {
-    return (
-      <div className="space-y-0.5">
-        {title && (
-          <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            {title}
-          </p>
-        )}
-        {items.map((item) => (
-          <NavItem key={item.key} item={item} onClick={onItemClick} />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <>
       {/* Desktop Sidebar */}
@@ -153,9 +165,9 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-5 overflow-y-auto">
-          <NavSection items={mainNavItems} />
-          <NavSection title="Workflows" items={processNavItems} />
-          <NavSection title="Admin" items={adminNavItems} />
+          <NavSection items={mainNavItems} locale={locale} isActive={checkIsActive} t={t} />
+          <NavSection title="Workflows" items={processNavItems} locale={locale} isActive={checkIsActive} t={t} />
+          <NavSection title="Admin" items={adminNavItems} locale={locale} isActive={checkIsActive} t={t} />
         </nav>
 
         {/* Bottom Actions */}
@@ -249,9 +261,9 @@ export function Sidebar() {
                   </div>
                 </div>
                 <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
-                  <NavSection items={mainNavItems} onItemClick={() => setMobileOpen(false)} />
-                  <NavSection title="Workflows" items={processNavItems} onItemClick={() => setMobileOpen(false)} />
-                  <NavSection title="Admin" items={adminNavItems} onItemClick={() => setMobileOpen(false)} />
+                  <NavSection items={mainNavItems} locale={locale} isActive={checkIsActive} t={t} onItemClick={() => setMobileOpen(false)} />
+                  <NavSection title="Workflows" items={processNavItems} locale={locale} isActive={checkIsActive} t={t} onItemClick={() => setMobileOpen(false)} />
+                  <NavSection title="Admin" items={adminNavItems} locale={locale} isActive={checkIsActive} t={t} onItemClick={() => setMobileOpen(false)} />
                 </nav>
                 <div className="p-4 border-t space-y-3">
                   {user && (

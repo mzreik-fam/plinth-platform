@@ -1,7 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useLocale} from "next-intl";
+import {useEffect, useState, useCallback} from "react";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -27,29 +26,45 @@ import {
 import {ClipboardCheck, CheckCircle2, XCircle, Loader2} from "lucide-react";
 import {toast} from "sonner";
 
+interface Approval {
+  id: string;
+  unit_number: string;
+  project_name: string;
+  requested_by_name: string;
+  requested_at: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by_name?: string;
+  reviewed_at?: string;
+}
 
+interface User {
+  role: string;
+  full_name?: string;
+}
 
 export default function ApprovalsPage() {
-  const [approvals, setApprovals] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{id: string; status: "approved" | "rejected"} | null>(null);
+
+  const loadApprovals = useCallback(async () => {
+    const res = await fetch("/api/unit-approvals");
+    const data = await res.json();
+    setApprovals(data.approvals || []);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     fetch("/api/users/me")
       .then((r) => r.json())
       .then((data) => setUser(data.user));
-
-    loadApprovals();
   }, []);
 
-  async function loadApprovals() {
-    const res = await fetch("/api/unit-approvals");
-    const data = await res.json();
-    setApprovals(data.approvals || []);
-    setLoading(false);
-  }
+  useEffect(() => {
+    loadApprovals();
+  }, [loadApprovals]);
 
   async function reviewApproval(id: string, status: "approved" | "rejected") {
     setProcessingId(id);

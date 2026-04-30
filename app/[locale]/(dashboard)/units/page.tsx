@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback, useRef} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -22,12 +22,29 @@ const statusColors: Record<string, string> = {
   terminated: "destructive",
 };
 
+interface Unit {
+  id: string;
+  unit_number: string;
+  project_name?: string;
+  status: string;
+  unit_type: string;
+  price: number;
+  area_sqft?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
+
 export default function UnitsPage() {
   const t = useTranslations("units");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const [units, setUnits] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -35,29 +52,22 @@ export default function UnitsPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
+  const filtersRef = useRef({search, statusFilter, projectFilter});
+  filtersRef.current = {search, statusFilter, projectFilter};
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    setOffset(0);
-    fetchUnits(0);
-  }, [search, statusFilter, projectFilter]);
-
-  async function fetchProjects() {
+  const fetchProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
     const data = await res.json();
     setProjects(data.projects || []);
-  }
+  }, []);
 
-  async function fetchUnits(newOffset: number) {
+  const fetchUnits = useCallback(async (newOffset: number) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
-      if (projectFilter) params.set("projectId", projectFilter);
+      if (filtersRef.current.search) params.set("search", filtersRef.current.search);
+      if (filtersRef.current.statusFilter) params.set("status", filtersRef.current.statusFilter);
+      if (filtersRef.current.projectFilter) params.set("projectId", filtersRef.current.projectFilter);
       params.set("limit", String(limit));
       params.set("offset", String(newOffset));
       const res = await fetch(`/api/units?${params.toString()}`);
@@ -70,7 +80,26 @@ export default function UnitsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchProjects();
+    fetchUnits(0);
+  }, [fetchProjects, fetchUnits]);
+
+  // Reset and fetch when filters change
+  const prevFiltersRef = useRef({search, statusFilter, projectFilter});
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (prev.search !== search || prev.statusFilter !== statusFilter || prev.projectFilter !== projectFilter) {
+      prevFiltersRef.current = {search, statusFilter, projectFilter};
+      requestAnimationFrame(() => {
+        setOffset(0);
+        fetchUnits(0);
+      });
+    }
+  }, [search, statusFilter, projectFilter, fetchUnits]);
 
   async function deleteUnit(id: string) {
     if (!confirm(tc("confirm"))) return;
@@ -129,11 +158,11 @@ export default function UnitsPage() {
         </Select>
         <Select value={projectFilter} onValueChange={(v) => setProjectFilter(v || "")}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All projects">{projects.find((p: any) => p.id === projectFilter)?.name || "All projects"}</SelectValue>
+            <SelectValue placeholder="All projects">{projects.find((p) => p.id === projectFilter)?.name || "All projects"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">All projects</SelectItem>
-            {projects.map((p: any) => (
+            {projects.map((p) => (
               <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
             ))}
           </SelectContent>
@@ -161,7 +190,7 @@ export default function UnitsPage() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {units.map((unit: any) => (
+            {units.map((unit) => (
               <Card key={unit.id} className="group hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-4">

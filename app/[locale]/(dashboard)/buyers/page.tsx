@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback, useRef} from "react";
 import {useTranslations, useLocale} from "next-intl";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -21,34 +21,60 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {Label} from "@/components/ui/label";
-import {Plus, Users, Loader2, Mail, Phone, Globe, Search, ShoppingCart, Pencil, Trash2} from "lucide-react";
+import {Plus, Users, Loader2, Search, ShoppingCart, Pencil, Trash2} from "lucide-react";
 import {toast} from "sonner";
+
+interface Buyer {
+  id: string;
+  full_name: string;
+  phone: string;
+  email?: string;
+  nationality?: string;
+  emirates_id?: string;
+  passport_number?: string;
+  address?: string;
+}
+
+interface EditForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  emiratesId: string;
+  passportNumber: string;
+  nationality: string;
+  address: string;
+}
 
 export default function BuyersPage() {
   const t = useTranslations("buyers");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const [buyers, setBuyers] = useState<any[]>([]);
+  const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
 
-  const [editBuyer, setEditBuyer] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editBuyer, setEditBuyer] = useState<Buyer | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({
+    fullName: "",
+    email: "",
+    phone: "",
+    emiratesId: "",
+    passportNumber: "",
+    nationality: "",
+    address: "",
+  });
   const [saving, setSaving] = useState(false);
+  const searchRef = useRef(search);
+  searchRef.current = search;
 
-  useEffect(() => {
-    setOffset(0);
-    fetchBuyers(0);
-  }, [search]);
-
-  async function fetchBuyers(newOffset: number) {
+  const fetchBuyers = useCallback(async (newOffset: number) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
+      if (searchRef.current) params.set("search", searchRef.current);
       params.set("limit", String(limit));
       params.set("offset", String(newOffset));
       const res = await fetch(`/api/buyers?${params.toString()}`);
@@ -61,7 +87,25 @@ export default function BuyersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchBuyers(0);
+  }, [fetchBuyers]);
+
+  // Reset and fetch when search changes
+  const prevSearchRef = useRef(search);
+  useEffect(() => {
+    if (prevSearchRef.current !== search) {
+      prevSearchRef.current = search;
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      requestAnimationFrame(() => {
+        setOffset(0);
+        fetchBuyers(0);
+      });
+    }
+  }, [search, fetchBuyers]);
 
   async function deleteBuyer(id: string) {
     if (!confirm("Are you sure you want to delete this buyer?")) return;
@@ -79,16 +123,16 @@ export default function BuyersPage() {
     }
   }
 
-  function openEdit(buyer: any) {
+  function openEdit(buyer: Buyer) {
     setEditBuyer(buyer);
     setEditForm({
       fullName: buyer.full_name,
-      email: buyer.email,
+      email: buyer.email || "",
       phone: buyer.phone,
-      emiratesId: buyer.emirates_id,
-      passportNumber: buyer.passport_number,
-      nationality: buyer.nationality,
-      address: buyer.address,
+      emiratesId: buyer.emirates_id || "",
+      passportNumber: buyer.passport_number || "",
+      nationality: buyer.nationality || "",
+      address: buyer.address || "",
     });
   }
 
@@ -176,7 +220,7 @@ export default function BuyersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {buyers.map((buyer: any) => (
+                  {buyers.map((buyer) => (
                     <TableRow key={buyer.id}>
                       <TableCell className="font-medium">{buyer.full_name}</TableCell>
                       <TableCell>{buyer.phone}</TableCell>

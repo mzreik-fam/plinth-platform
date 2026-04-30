@@ -341,7 +341,7 @@ describe('P1-3: Snagging Ticket Auto-Advance', () => {
   describe('Complete Workflow Scenarios', () => {
     it('scenario: 3 tickets, close them one by one -> advance on third', () => {
       // Initial state: 3 open tickets
-      let tickets = [
+      const tickets = [
         createMockTicket({id: 't1', status: TICKET_STATUS.OPEN}),
         createMockTicket({id: 't2', status: TICKET_STATUS.OPEN}),
         createMockTicket({id: 't3', status: TICKET_STATUS.OPEN}),
