@@ -43,8 +43,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'delete', resourceType: 'payment_plan', resourceId: id, before: existing[0] || null, after: null });
 
     return NextResponse.json({success: true});
-  } catch (error: any) {
-    if (error.code === '23503') {
+  } catch (error: unknown) {
+    if ((error as {code?: string}).code === '23503') {
       return NextResponse.json({error: 'Cannot delete payment plan because it is in use'}, {status: 409});
     }
     console.error('Delete payment plan error:', error);

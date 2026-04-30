@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'update', resourceType: 'user', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
     return NextResponse.json({user: result[0]});
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({error: error.issues[0]?.message || 'Invalid input'}, {status: 400});
     }

@@ -1,9 +1,9 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useTranslations, useLocale} from "next-intl";
+import {useLocale} from "next-intl";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Skeleton} from "@/components/ui/skeleton";
 import {toast} from "sonner";
@@ -40,7 +40,6 @@ const paymentMethodLabels: Record<string, string> = {
 };
 
 export default function PendingPaymentsPage() {
-  const t = useTranslations("common");
   const locale = useLocale();
   const [payments, setPayments] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +58,7 @@ export default function PendingPaymentsPage() {
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setPayments(data.payments || []);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load pending payments");
     } finally {
       setLoading(false);
@@ -94,7 +93,7 @@ export default function PendingPaymentsPage() {
         const error = await res.json();
         toast.error(error.error || "Failed to process payment");
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred");
     } finally {
       setProcessing(false);

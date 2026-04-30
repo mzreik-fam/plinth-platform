@@ -6,20 +6,23 @@ import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 
-
+interface ProjectOption {
+  id: string;
+  name: string;
+}
 
 export default function NewUnitPage() {
   const t = useTranslations("units");
   const tc = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [form, setForm] = useState({
     projectId: "",
     unitNumber: "",
@@ -99,10 +102,10 @@ export default function NewUnitPage() {
               ) : (
                 <Select value={form.projectId} onValueChange={(v) => setForm({...form, projectId: v || ""})}>
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select project">{projects.find((p: any) => p.id === form.projectId)?.name || "Select project"}</SelectValue>
+                    <SelectValue placeholder="Select project">{projects.find((p) => p.id === form.projectId)?.name || "Select project"}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((p: any) => (
+                    {projects.map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                     ))}
                   </SelectContent>

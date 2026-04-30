@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {KeyRound, Eye, Plus} from "lucide-react";
+import {KeyRound, Eye} from "lucide-react";
 
 
 
@@ -38,9 +38,18 @@ const statusColors: Record<string, string> = {
   completed: "outline",
 };
 
+interface Handover {
+  id: string;
+  unit_number: string;
+  project_name: string;
+  buyer_name: string;
+  status: string;
+  scheduled_date?: string;
+}
+
 export default function HandoversPage() {
   const locale = useLocale();
-  const [handovers, setHandovers] = useState<any[]>([]);
+  const [handovers, setHandovers] = useState<Handover[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,7 +108,7 @@ export default function HandoversPage() {
                       <div className="text-xs text-muted-foreground">{h.buyer_phone}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusColors[h.status] as any || "secondary"}>
+                      <Badge variant={(statusColors[h.status] as "default" | "secondary" | "destructive" | "outline" | null | undefined) || "secondary"}>
                         {statusLabels[h.status] || h.status}
                       </Badge>
                     </TableCell>

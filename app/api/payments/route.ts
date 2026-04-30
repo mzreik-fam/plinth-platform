@@ -90,9 +90,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({payments});
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('List payments error:', err);
-    return NextResponse.json({error: err.message}, {status: 500});
+    return NextResponse.json({error: (err as Error).message}, {status: 500});
   }
 }
 
@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest) {
     await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: auditAction, resourceType: 'payment', resourceId: result[0].id, before: existing[0] || null, after: result[0] });
 
     return NextResponse.json({payment: result[0]});
-  } catch (err: any) {
-    return NextResponse.json({error: err.message}, {status: 500});
+  } catch (err: unknown) {
+    return NextResponse.json({error: (err as Error).message}, {status: 500});
   }
 }

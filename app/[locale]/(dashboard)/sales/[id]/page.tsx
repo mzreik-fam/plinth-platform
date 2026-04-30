@@ -25,15 +25,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {Skeleton} from "@/components/ui/skeleton";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -57,6 +48,38 @@ const statusColors: Record<string, string> = {
   terminated: "destructive",
 };
 
+interface TransactionData {
+  id: string;
+  buyer_name: string;
+  buyer_id: string;
+  status: string;
+  unit_id: string;
+  unit_number: string;
+  unit_type: string;
+  agent_name?: string;
+  portal_token?: string;
+  total_price: number;
+  signed_at?: string;
+  payment_plan_milestones?: PaymentMilestone[];
+}
+
+interface PaymentRecord {
+  id: string;
+  amount: number;
+  status: string;
+  payment_method: string;
+  reference_number?: string;
+  notes?: string;
+  confirmed_by_name?: string;
+  confirmed_at?: string;
+  proof_document_url?: string;
+}
+
+interface PaymentMilestone {
+  label?: string;
+  percent?: number;
+}
+
 export default function TransactionDetailPage() {
   const t = useTranslations("sales");
   const tc = useTranslations("common");
@@ -64,13 +87,13 @@ export default function TransactionDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [transaction, setTransaction] = useState<any>(null);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [transaction, setTransaction] = useState<TransactionData | null>(null);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentForm, setPaymentForm] = useState({amount: "", paymentMethod: "bank_transfer", referenceNumber: "", notes: ""});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{role: string} | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [actionType, setActionType] = useState<'confirm' | 'reject' | null>(null);
   const [actionNotes, setActionNotes] = useState("");
   const [processingAction, setProcessingAction] = useState(false);
@@ -117,7 +140,7 @@ export default function TransactionDetailPage() {
   const canConfirmPayments = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
   async function updateStatus(newStatus: string, options?: {signedAt?: string}) {
-    const body: any = {status: newStatus};
+    const body: Record<string, string> = {status: newStatus};
     if (options?.signedAt) {
       body.signedAt = options.signedAt;
     }
@@ -186,14 +209,14 @@ export default function TransactionDetailPage() {
         const error = await res.json();
         toast.error(error.error || "Failed to process payment");
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred");
     } finally {
       setProcessingAction(false);
     }
   }
 
-  function openActionDialog(payment: any, action: 'confirm' | 'reject') {
+  function openActionDialog(payment: PaymentRecord, action: 'confirm' | 'reject') {
     setSelectedPayment(payment);
     setActionType(action);
     setActionNotes("");
@@ -229,7 +252,7 @@ export default function TransactionDetailPage() {
         const error = await res.json();
         toast.error(error.error || "Failed to start handover");
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred while starting handover");
     } finally {
       setStartingHandover(false);
@@ -246,17 +269,17 @@ export default function TransactionDetailPage() {
   if (loading) return <div className="text-muted-foreground">{tc("loading")}</div>;
   if (!transaction) return <div className="text-muted-foreground">{tc("noData")}</div>;
 
-  const totalPaid = payments.filter((p: any) => p.status === 'confirmed').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const totalPaid = payments.filter((p) => p.status === 'confirmed').reduce((sum: number, p) => sum + Number(p.amount), 0);
   const remaining = Number(transaction.total_price) - totalPaid;
   
   // P0-4: Booking confirmation conditions
   const hasSignature = transaction.signed_at != null || wetSignatureChecked;
-  const hasConfirmedPayment = payments.some((p: any) => p.status === 'confirmed');
+  const hasConfirmedPayment = payments.some((p) => p.status === 'confirmed');
   const canConfirmBooking = transaction.status === 'booking_pending' && hasSignature && hasConfirmedPayment;
   
   // P0-6: Handover conditions
   const milestones = transaction.payment_plan_milestones || [];
-  const finalMilestone = milestones.find((m: any) => 
+  const finalMilestone = milestones.find((m) => 
     m.label?.toLowerCase().includes('final') || 
     m.label?.toLowerCase().includes('handover')
   ) || milestones[milestones.length - 1];
@@ -277,7 +300,7 @@ export default function TransactionDetailPage() {
           </Button>
         </Link>
         <h1 className="text-2xl font-bold">{transaction.buyer_name}</h1>
-        <Badge variant={statusColors[transaction.status] as any || "secondary"}>
+        <Badge variant={(statusColors[transaction.status] || "secondary") as "default" | "secondary" | "destructive" | "outline" | "warning" | "success"}>
           {t(transaction.status)}
         </Badge>
       </div>
@@ -627,7 +650,7 @@ export default function TransactionDetailPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {payments.length === 0 && <p className="text-sm text-muted-foreground">No payments recorded.</p>}
-          {payments.map((p: any) => (
+          {payments.map((p) => (
             <div key={p.id} className="flex justify-between items-start py-2 border-b last:border-0">
               <div className="flex-1">
                 <div className="flex items-center gap-2">

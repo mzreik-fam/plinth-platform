@@ -148,8 +148,8 @@ export async function POST(request: NextRequest) {
     `;
 
     const notifyEmails = new Set<string>();
-    agents.forEach((a: any) => { if (a.email) notifyEmails.add(a.email); });
-    admins.forEach((a: any) => { if (a.email) notifyEmails.add(a.email); });
+    agents.forEach((a: {email?: string}) => { if (a.email) notifyEmails.add(a.email); });
+    admins.forEach((a: {email?: string}) => { if (a.email) notifyEmails.add(a.email); });
 
     if (notifyEmails.size > 0) {
       await notifyBuyerUpload({

@@ -41,15 +41,31 @@ const roleOptions = [
   {value: "agency_agent", label: "Agency Agent"},
 ];
 
+interface User {
+  id: string;
+  full_name: string;
+  username: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  invite_token?: string;
+}
+
+interface UserEditForm {
+  fullName: string;
+  email: string;
+  role: string;
+}
+
 export default function UsersPage() {
   const t = useTranslations("users");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [editUser, setEditUser] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState<UserEditForm>({fullName: "", email: "", role: ""});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -80,7 +96,7 @@ export default function UsersPage() {
     }
   }
 
-  async function toggleActive(user: any) {
+  async function toggleActive(user: User) {
     try {
       const res = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
@@ -123,7 +139,7 @@ export default function UsersPage() {
     }
   }
 
-  function openEdit(user: any) {
+  function openEdit(user: User) {
     setEditUser(user);
     setEditForm({
       fullName: user.full_name,
@@ -132,7 +148,7 @@ export default function UsersPage() {
     });
   }
 
-  function getStatusBadge(user: any) {
+  function getStatusBadge(user: User) {
     if (user.invite_token) {
       return <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">{t("pending")}</Badge>;
     }
@@ -187,7 +203,7 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user: any) => (
+                {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.full_name}</TableCell>
                     <TableCell>@{user.username}</TableCell>

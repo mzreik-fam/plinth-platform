@@ -14,13 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {AlertTriangle, Eye, Plus} from "lucide-react";
+import {AlertTriangle, Eye} from "lucide-react";
 
-
+interface TerminationCase {
+  id: string;
+  unit_number: string;
+  project_name: string;
+  buyer_name: string;
+  status: string;
+  current_step: number;
+  total_paid: number;
+  refund_amount: number;
+}
 
 export default function TerminationsPage() {
   const locale = useLocale();
-  const [cases, setCases] = useState<any[]>([]);
+  const [cases, setCases] = useState<TerminationCase[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

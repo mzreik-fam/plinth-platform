@@ -9,12 +9,17 @@ import {Label} from "@/components/ui/label";
 import {Card, CardContent} from "@/components/ui/card";
 import {Loader2, Building2, CheckCircle2} from "lucide-react";
 
+interface InviteUser {
+  full_name: string;
+  username: string;
+}
+
 export default function InvitePage() {
   const params = useParams();
   const router = useRouter();
   const locale = useLocale();
   const token = params.token as string;
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<InviteUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");

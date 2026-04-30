@@ -77,6 +77,45 @@ function createMockUser(role: string) {
 
 // ---- Handover Gating Validation Logic ----
 
+interface MockTransaction {
+  id: string;
+  tenant_id: string;
+  unit_id: string;
+  buyer_id: string;
+  payment_plan_id: string;
+  agent_id: string;
+  status: string;
+  eoi_amount: number;
+  eoi_date: string;
+  booking_amount: number;
+  booking_date: string;
+  total_price: number;
+  signed_at: string;
+  portal_token: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  payment_plan_milestones: Array<{
+    label: string;
+    percent: number;
+    due_days_from_booking: number;
+  }>;
+}
+
+interface MockPayment {
+  id: string;
+  tenant_id: string;
+  transaction_id: string;
+  amount: number;
+  payment_method: string;
+  reference_number: string;
+  proof_url: string | null;
+  status: string;
+  confirmed_by: string;
+  confirmed_at: string;
+  created_at: string;
+}
+
 interface HandoverValidationResult {
   valid: boolean;
   error?: string;
@@ -91,8 +130,8 @@ interface HandoverValidationResult {
 }
 
 function validateHandoverRequirements(
-  transaction: any,
-  confirmedPayments: any[],
+  transaction: MockTransaction,
+  confirmedPayments: MockPayment[],
   bccDocumentUrl: string | null | undefined,
   userRole: string
 ): HandoverValidationResult {
@@ -139,7 +178,7 @@ function validateHandoverRequirements(
     .reduce((sum, p) => sum + Number(p.amount), 0);
   
   const milestones = transaction.payment_plan_milestones || [];
-  const finalMilestone = milestones.find((m: any) => 
+  const finalMilestone = milestones.find((m: { label?: string; percent?: number; due_days_from_booking?: number }) => 
     m.label?.toLowerCase().includes('final') || 
     m.label?.toLowerCase().includes('handover')
   ) || milestones[milestones.length - 1];
@@ -300,7 +339,7 @@ describe('P0-6: Handover Gating on BCC + Zero Balance', () => {
   describe('Zero Balance Validation', () => {
     it('rejects handover when no payments made', () => {
       const transaction = createMockTransaction();
-      const payments: any[] = [];
+      const payments: MockPayment[] = [];
       const bccUrl = 'https://example.com/bcc.pdf';
       
       const result = validateHandoverRequirements(transaction, payments, bccUrl, USER_ROLES.SUPER_ADMIN);
@@ -442,7 +481,7 @@ describe('P0-6: Handover Gating on BCC + Zero Balance', () => {
   describe('Combined Validation', () => {
     it('fails with role error when both role and BCC are missing (role checked first)', () => {
       const transaction = createMockTransaction();
-      const payments = [];
+      const payments: MockPayment[] = [];
       
       const result = validateHandoverRequirements(transaction, payments, null, USER_ROLES.ADMIN);
       
@@ -452,7 +491,7 @@ describe('P0-6: Handover Gating on BCC + Zero Balance', () => {
 
     it('fails with BCC error when role passes but BCC is missing', () => {
       const transaction = createMockTransaction();
-      const payments = [];
+      const payments: MockPayment[] = [];
       
       const result = validateHandoverRequirements(transaction, payments, null, USER_ROLES.SUPER_ADMIN);
       

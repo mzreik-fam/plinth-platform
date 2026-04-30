@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {FileText, TrendingUp, AlertTriangle, CheckCircle2, Clock} from "lucide-react";
+import {FileText, AlertTriangle} from "lucide-react";
 
 
 
@@ -38,11 +38,46 @@ function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+interface FinancialData {
+  transaction: {
+    project_name: string;
+    unit_number: string;
+    status: string;
+    total_price: number;
+    buyer_name: string;
+    payment_plan_name?: string;
+    payment_plan_milestones?: Array<{label: string; percent: number}>;
+  };
+  payments: Array<{
+    id: string;
+    amount: number;
+    payment_method: string;
+    status: string;
+    created_at: string;
+  }>;
+  penalties: Array<{
+    id: string;
+    amount: number;
+    reason: string;
+    status: string;
+  }>;
+  documents: Array<{
+    id: string;
+    file_name: string;
+    category: string;
+  }>;
+  summary: {
+    totalPaid: number;
+    remainingBalance: number;
+    totalPenalty: number;
+  };
+}
+
 export default function FinancialStatementPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
   const transactionId = searchParams.get("transaction_id");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<FinancialData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -171,7 +206,7 @@ export default function FinancialStatementPage() {
             <p className="font-medium">{transaction.payment_plan_name}</p>
             {transaction.payment_plan_milestones && (
               <div className="mt-3 space-y-2">
-                {(transaction.payment_plan_milestones as any[]).map((m, i) => (
+                {transaction.payment_plan_milestones.map((m, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{m.label}</span>
                     <span className="font-medium">{m.percent}%</span>
@@ -204,7 +239,7 @@ export default function FinancialStatementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payments.map((p: any) => (
+                {payments.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell>{new Date(p.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="font-medium">AED {Number(p.amount).toLocaleString()}</TableCell>
@@ -245,7 +280,7 @@ export default function FinancialStatementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {penalties.map((p: any) => (
+                {penalties.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell>{p.milestone_label}</TableCell>
                     <TableCell>{new Date(p.due_date).toLocaleDateString()}</TableCell>
@@ -272,7 +307,7 @@ export default function FinancialStatementPage() {
             <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
           ) : (
             <div className="space-y-2">
-              {documents.map((d: any) => (
+              {documents.map((d) => (
                 <div key={d.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <FileText className="h-4 w-4 text-muted-foreground" />

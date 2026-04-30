@@ -15,7 +15,7 @@ async function getAuthUser() {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({area: result[0]}, {status: 201});
-  } catch (error: any) {
-    if (error.code === '23505') {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as {code: string}).code === '23505') {
       return NextResponse.json({error: 'An area with this name already exists'}, {status: 409});
     }
     console.error('Create area error:', error);

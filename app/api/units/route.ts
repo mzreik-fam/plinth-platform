@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(searchParams.get('offset') || '0');
 
   const whereClauses: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
   let paramIndex = 1;
 
   if (status) {

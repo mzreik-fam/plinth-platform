@@ -180,8 +180,8 @@ describe('Payment Confirmation Flow', () => {
 
       // Logic from financial-statement/route.ts
       const totalPaid = payments
-        .filter((p: any) => p.status === 'confirmed')
-        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+        .filter((p: { id: string; amount: number; status: string }) => p.status === 'confirmed')
+        .reduce((sum: number, p: { id: string; amount: number; status: string }) => sum + Number(p.amount), 0);
 
       assert.strictEqual(totalPaid, 175000, 'should only sum confirmed payments');
     });
@@ -194,8 +194,8 @@ describe('Payment Confirmation Flow', () => {
       ];
 
       const totalPending = payments
-        .filter((p: any) => p.status === 'pending')
-        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+        .filter((p: { id: string; amount: number; status: string }) => p.status === 'pending')
+        .reduce((sum: number, p: { id: string; amount: number; status: string }) => sum + Number(p.amount), 0);
 
       assert.strictEqual(totalPending, 80000, 'should track pending separately');
     });
@@ -301,7 +301,7 @@ describe('Payment Flow Integration', () => {
     // Verify confirmation audit
     assert.ok(capturedQueries[3].sql.includes('INSERT INTO audit_logs'), 'step 4: audit confirmation');
     const lastQuery = capturedQueries[3];
-    const hasStatusChange = lastQuery.sql.includes('status_change') || lastQuery.values.some((v: any) => v === 'status_change');
+    const hasStatusChange = lastQuery.sql.includes('status_change') || lastQuery.values.some((v: unknown) => v === 'status_change');
     assert.strictEqual(hasStatusChange, true, 'step 4: action is status_change');
   });
 });

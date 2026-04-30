@@ -67,6 +67,18 @@ export default function PortalPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
 
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/portal/${token}/documents`);
+      if (res.ok) {
+        const docs = await res.json();
+        setUploadedDocs(docs);
+      }
+    } catch {
+      // Silently fail - documents are optional display
+    }
+  }, [token]);
+
   useEffect(() => {
     fetch(`/api/portal/${token}`)
       .then((r) => {
@@ -78,25 +90,34 @@ export default function PortalPage() {
         setLoading(false);
         // Fetch documents if transaction exists
         if (data.transaction?.id) {
-          fetchDocuments(data.transaction.id);
+          fetchDocuments();
         }
       })
       .catch(() => {
         setError("Invalid or expired portal link.");
         setLoading(false);
       });
-  }, [token]);
+  }, [token, fetchDocuments]);
 
-  const fetchDocuments = async (transactionId: string) => {
-    try {
-      const res = await fetch(`/api/portal/${token}/documents`);
-      if (res.ok) {
-        const docs = await res.json();
-        setUploadedDocs(docs);
-      }
-    } catch {
-      // Silently fail - documents are optional display
+  const validateAndSetFile = (file: File) => {
+    setUploadError("");
+    setUploadSuccess(false);
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Invalid file type. Please upload PDF, JPG, or PNG only.");
+      return;
     }
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setUploadError("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setUploadFile(file);
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -123,27 +144,6 @@ export default function PortalPage() {
     if (files && files.length > 0) {
       validateAndSetFile(files[0]);
     }
-  };
-
-  const validateAndSetFile = (file: File) => {
-    setUploadError("");
-    setUploadSuccess(false);
-
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-    if (!allowedTypes.includes(file.type)) {
-      setUploadError("Invalid file type. Please upload PDF, JPG, or PNG only.");
-      return;
-    }
-
-    // Validate file size (10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setUploadError("File too large. Maximum size is 10MB.");
-      return;
-    }
-
-    setUploadFile(file);
   };
 
   const handleUpload = async () => {
@@ -177,7 +177,7 @@ export default function PortalPage() {
         setUploadDescription("");
         // Refresh documents list
         if (data?.transaction?.id) {
-          fetchDocuments(data.transaction.id);
+          fetchDocuments();
         }
       }
     } catch {

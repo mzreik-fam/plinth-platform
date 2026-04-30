@@ -67,7 +67,6 @@ export default function BuyersPage() {
     address: "",
   });
   const [saving, setSaving] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
 
   async function fetchBuyers(newOffset: number, searchQuery: string) {
     setLoading(true);
@@ -88,13 +87,12 @@ export default function BuyersPage() {
     }
   }
 
-  // Handle initial load and search changes
+  // Handle search changes
   useEffect(() => {
-    if (initialLoad) {
-      setInitialLoad(false);
-    }
-    fetchBuyers(0, search);
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    const timeoutId = setTimeout(() => {
+      fetchBuyers(0, search);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [search]);
 
   async function deleteBuyer(id: string) {

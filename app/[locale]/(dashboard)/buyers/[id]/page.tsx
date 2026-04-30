@@ -7,16 +7,27 @@ import {useParams} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {ArrowLeft, Loader2} from "lucide-react";
 import {toast} from "sonner";
+
+interface Buyer {
+  id: string;
+  full_name: string;
+  email?: string;
+  phone: string;
+  emirates_id?: string;
+  passport_number?: string;
+  nationality?: string;
+  address?: string;
+}
 
 export default function EditBuyerPage() {
   const t = useTranslations("buyers");
   const tc = useTranslations("common");
   const locale = useLocale();
   const {id} = useParams();
-  const [buyer, setBuyer] = useState<any>(null);
+  const [buyer, setBuyer] = useState<Buyer | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 

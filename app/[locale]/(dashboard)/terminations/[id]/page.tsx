@@ -19,15 +19,56 @@ const stepDescriptions = [
   "Execution Request to DLD — Day 90",
 ];
 
+interface TerminationCase {
+  unit_number: string;
+  project_name: string;
+  buyer_name: string;
+  buyer_email: string;
+  total_price: number;
+  total_paid: number;
+  deduction_amount: number;
+  refund_amount: number;
+  reason?: string;
+  current_step: number;
+  created_at: string;
+  status: string;
+}
+
+interface TerminationStep {
+  id: string;
+  step_number: number;
+  step_name: string;
+  status: string;
+  deadline_date?: string;
+  completed_at?: string;
+  notice_sent_at?: string;
+  notice_method?: string;
+  courier_tracking?: string;
+  receipt_confirmed_at?: string;
+  airway_bill_url?: string;
+  email_proof_url?: string;
+  notes?: string;
+}
+
+interface StepForm {
+  notice_sent_at: string;
+  notice_method: string;
+  courier_tracking: string;
+  receipt_confirmed_at: string;
+  airway_bill_url: string;
+  email_proof_url: string;
+  notes: string;
+}
+
 export default function TerminationDetailPage() {
   const locale = useLocale();
   const params = useParams();
   const id = params.id as string;
-  const [terminationCase, setTerminationCase] = useState<any>(null);
-  const [steps, setSteps] = useState<any[]>([]);
+  const [terminationCase, setTerminationCase] = useState<TerminationCase | null>(null);
+  const [steps, setSteps] = useState<TerminationStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [stepForms, setStepForms] = useState<Record<string, any>>({});
+  const [stepForms, setStepForms] = useState<Record<string, StepForm>>({});
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
@@ -40,8 +81,8 @@ export default function TerminationDetailPage() {
     const data = await res.json();
     setTerminationCase(data.case);
     setSteps(data.steps || []);
-    const forms: Record<string, any> = {};
-    (data.steps || []).forEach((step: any) => {
+    const forms: Record<string, StepForm> = {};
+    (data.steps || []).forEach((step: TerminationStep) => {
       forms[step.id] = {
         notice_sent_at: step.notice_sent_at ? formatDateTimeLocal(step.notice_sent_at) : "",
         notice_method: step.notice_method || "",
@@ -70,7 +111,7 @@ export default function TerminationDetailPage() {
         .map(async (step) => {
           const form = stepForms[step.id];
           if (!form) return;
-          const updates: any = {};
+          const updates: Partial<StepForm> = {};
           if (form.notice_sent_at) updates.notice_sent_at = form.notice_sent_at;
           if (form.notice_method) updates.notice_method = form.notice_method;
           if (form.courier_tracking) updates.courier_tracking = form.courier_tracking;

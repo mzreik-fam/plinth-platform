@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, ComponentType} from "react";
 import {useTranslations} from "next-intl";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function DashboardPage() {
 }
 
 function StatCard({title, value, icon: Icon, description, trend, highlight, alert}: {
-  title: string; value: string | number; icon: any; description?: string; trend?: string; highlight?: boolean; alert?: boolean;
+  title: string; value: string | number; icon: ComponentType<{className?: string}>; description?: string; trend?: string; highlight?: boolean; alert?: boolean;
 }) {
   return (
     <Card className={highlight ? "border-primary/50" : ""}>
@@ -219,8 +219,9 @@ function StatCard({title, value, icon: Icon, description, trend, highlight, aler
   );
 }
 
-function PipelineRow({label, value, color, stats}: {label: string; value: number; color: string; stats: any}) {
-  const total = (stats?.sales?.eoi_count || 0) + (stats?.sales?.booking_pending_count || 0) + (stats?.sales?.confirmed_count || 0) + (stats?.sales?.cancelled_count || 0);
+function PipelineRow({label, value, color, stats}: {label: string; value: number; color: string; stats: Record<string, unknown> | null}) {
+  const salesStats = stats?.sales as Record<string, number> | undefined;
+  const total = (salesStats?.eoi_count || 0) + (salesStats?.booking_pending_count || 0) + (salesStats?.confirmed_count || 0) + (salesStats?.cancelled_count || 0);
   const width = total > 0 ? (value / total) * 100 : 0;
   return (
     <div className="space-y-1">

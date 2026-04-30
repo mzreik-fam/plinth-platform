@@ -69,6 +69,23 @@ function createMockHandover(overrides = {}) {
 
 // ---- Snagging Auto-Advance Logic ----
 
+interface MockTicket {
+  id: string;
+  tenant_id: string;
+  handover_id: string;
+  unit_id: string;
+  title: string;
+  description: string;
+  severity: string;
+  assigned_to: string | null;
+  status: string;
+  buyer_comments: string | null;
+  engineer_comments: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface CheckResult {
   shouldAdvance: boolean;
   newStatus?: string;
@@ -78,7 +95,7 @@ interface CheckResult {
  * Check if handover should advance based on ticket statuses.
  * Both 'closed' and 'resolved' are considered terminal states.
  */
-function checkShouldAdvanceHandover(tickets: any[]): CheckResult {
+function checkShouldAdvanceHandover(tickets: MockTicket[]): CheckResult {
   if (tickets.length === 0) {
     // No tickets at all - handover can advance
     return {shouldAdvance: true, newStatus: HANDOVER_STATUS.READY_FOR_HANDOVER};
@@ -166,7 +183,7 @@ describe('P1-3: Snagging Ticket Auto-Advance', () => {
     });
 
     it('advances handover when there are no tickets at all', () => {
-      const tickets: any[] = [];
+      const tickets: MockTicket[] = [];
 
       const result = checkShouldAdvanceHandover(tickets);
 

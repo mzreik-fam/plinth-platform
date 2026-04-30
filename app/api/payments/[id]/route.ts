@@ -112,9 +112,9 @@ export async function PATCH(
     }
 
     return NextResponse.json({payment: result[0]});
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Payment confirmation error:', err);
-    return NextResponse.json({error: err.message}, {status: 500});
+    return NextResponse.json({error: (err as Error).message}, {status: 500});
   }
 }
 
@@ -157,8 +157,8 @@ export async function GET(
     }
 
     return NextResponse.json({payment: result[0]});
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Get payment error:', err);
-    return NextResponse.json({error: err.message}, {status: 500});
+    return NextResponse.json({error: (err as Error).message}, {status: 500});
   }
 }

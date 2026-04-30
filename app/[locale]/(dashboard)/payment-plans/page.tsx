@@ -1,8 +1,6 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useLocale} from "next-intl";
-import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -17,9 +15,22 @@ import {
 import {Plus, Loader2, Trash2, CalendarDays} from "lucide-react";
 import {toast} from "sonner";
 
+interface PlanMilestone {
+  label: string;
+  percent: number;
+  due_days_from_booking: number;
+}
+
+interface PaymentPlan {
+  id: string;
+  name: string;
+  description?: string;
+  is_default?: boolean;
+  milestones?: PlanMilestone[];
+}
+
 export default function PaymentPlansPage() {
-  const locale = useLocale();
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({name: "", description: ""});
@@ -164,7 +175,7 @@ export default function PaymentPlansPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {plans.map((plan: any) => (
+          {plans.map((plan) => (
             <Card key={plan.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
@@ -179,7 +190,7 @@ export default function PaymentPlansPage() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  {(plan.milestones || []).map((m: any, i: number) => (
+                  {(plan.milestones || []).map((m, i: number) => (
                     <div key={i} className="flex justify-between text-sm">
                       <span>{m.label}</span>
                       <span className="font-medium">{m.percent}% · {m.due_days_from_booking} days</span>

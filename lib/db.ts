@@ -6,7 +6,7 @@ if (!process.env.DATABASE_URL) {
 
 export const sql = neon(process.env.DATABASE_URL);
 
-export async function withTenant(tenantId: string, queryFn: (db: typeof sql) => Promise<any>) {
+export async function withTenant(tenantId: string, queryFn: (db: typeof sql) => Promise<unknown>) {
   await sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
   return queryFn(sql);
 }

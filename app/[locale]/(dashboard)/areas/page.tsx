@@ -24,9 +24,14 @@ import {
 import {Plus, Loader2, MapPin, Trash2} from "lucide-react";
 import {toast} from "sonner";
 
+interface Area {
+  id: string;
+  name: string;
+}
+
 export default function AreasPage() {
   const locale = useLocale();
-  const [areas, setAreas] = useState<any[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [name, setName] = useState("");
@@ -148,7 +153,7 @@ export default function AreasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {areas.map((area: any) => (
+                {areas.map((area) => (
                   <TableRow key={area.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">

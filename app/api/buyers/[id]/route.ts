@@ -96,8 +96,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'delete', resourceType: 'buyer', resourceId: id, before: existing[0] || null, after: null });
 
     return NextResponse.json({success: true});
-  } catch (error: any) {
-    if (error.code === '23503') {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as {code: string}).code === '23503') {
       return NextResponse.json({error: 'Cannot delete buyer because they have linked transactions'}, {status: 409});
     }
     console.error('Delete buyer error:', error);

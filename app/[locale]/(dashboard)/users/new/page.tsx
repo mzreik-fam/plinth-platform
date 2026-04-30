@@ -2,7 +2,6 @@
 
 import {useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
-import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -27,7 +26,6 @@ export default function NewUserPage() {
   const t = useTranslations("users");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
   const [form, setForm] = useState({
     username: "",
     email: "",

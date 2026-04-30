@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useLocale, useTranslations} from "next-intl";
+import {useLocale} from "next-intl";
 import Link from "next/link";
 import {useParams} from "next/navigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
@@ -67,12 +67,32 @@ const statusSteps = [
   "completed",
 ];
 
+interface Handover {
+  id: string;
+  unit_id: string;
+  status: string;
+  scheduled_date?: string;
+  actual_date?: string;
+  notes?: string;
+  buyer_name: string;
+  unit_number: string;
+  project_name: string;
+}
+
+interface Ticket {
+  id: string;
+  title: string;
+  description?: string;
+  severity: string;
+  status: string;
+}
+
 export default function HandoverDetailPage() {
   const locale = useLocale();
   const params = useParams();
   const id = params.id as string;
-  const [handover, setHandover] = useState<any>(null);
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [handover, setHandover] = useState<Handover | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [newTicket, setNewTicket] = useState({title: "", description: "", severity: "minor"});
@@ -89,7 +109,7 @@ export default function HandoverDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  async function updateHandover(updates: any) {
+  async function updateHandover(updates: Record<string, unknown>) {
     setUpdating(true);
     const res = await fetch(`/api/handovers/${id}`, {
       method: "PATCH",

@@ -51,7 +51,6 @@ export default function SalesPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
-  const [initialLoad, setInitialLoad] = useState(true);
 
   async function fetchTransactions(newOffset: number, currentSearch: string, currentStatus: string) {
     setLoading(true);
@@ -75,11 +74,8 @@ export default function SalesPage() {
 
   // Handle initial load and filter changes
   useEffect(() => {
-    if (initialLoad) {
-      setInitialLoad(false);
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTransactions(0, search, statusFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   }, [search, statusFilter]);
 
   return (
@@ -154,7 +150,7 @@ export default function SalesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <p className="font-semibold text-base truncate">{tx.buyer_name}</p>
-                        <Badge variant={statusColors[tx.status] as any || "secondary"} className="shrink-0">
+                        <Badge variant={(statusColors[tx.status] || "secondary") as "default" | "secondary" | "destructive" | "outline" | "warning" | "success"} className="shrink-0">
                           {t(tx.status)}
                         </Badge>
                       </div>

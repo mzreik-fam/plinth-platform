@@ -22,7 +22,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): Promise<string> {
-  return new SignJWT(payload as any)
+  return new SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')

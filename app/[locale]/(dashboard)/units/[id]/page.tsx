@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {useTranslations, useLocale} from "next-intl";
-import {useParams, useRouter} from "next/navigation";
+import {useParams} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -22,17 +22,38 @@ import {
 } from "@/components/ui/breadcrumb";
 import {Skeleton} from "@/components/ui/skeleton";
 
+interface FileItem {
+  key: string;
+  url: string;
+  name: string;
+  size: number;
+}
+
+interface UnitData {
+  id?: string;
+  unit_number: string;
+  unit_type: string;
+  project_name?: string;
+  price: number;
+  area_sqft?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  features?: string;
+  status: string;
+  images?: FileItem[];
+  documents?: FileItem[];
+}
+
 export default function UnitDetailPage() {
   const t = useTranslations("units");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
-  const [unit, setUnit] = useState<any>(null);
+  const [unit, setUnit] = useState<UnitData | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Partial<UnitData>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -100,7 +121,7 @@ export default function UnitDetailPage() {
   async function deleteFile(key: string, type: "images" | "documents") {
     try {
       await fetch("/api/upload", {method: "DELETE", headers: {"Content-Type": "application/json"}, body: JSON.stringify({key})});
-      const updated = (unit[type] || []).filter((f: any) => f.key !== key);
+      const updated = (unit[type] || []).filter((f: FileItem) => f.key !== key);
       await fetch(`/api/units/${id}`, {
         method: "PATCH",
         headers: {"Content-Type": "application/json"},
@@ -330,7 +351,7 @@ export default function UnitDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
-            {(unit.images || []).map((img: any) => (
+            {(unit.images || []).map((img) => (
               <div key={img.key} className="relative aspect-square rounded-lg overflow-hidden border group">
                 <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
                 <button
@@ -360,7 +381,7 @@ export default function UnitDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {(unit.documents || []).map((doc: any) => (
+            {(unit.documents || []).map((doc) => (
               <div key={doc.key} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <div className="flex-1 min-w-0">

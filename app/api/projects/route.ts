@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const areaId = searchParams.get('areaId');
 
   let whereClause = '';
-  const params: any[] = [];
+  const params: string[] = [];
   if (areaId) {
     whereClause = 'WHERE p.area_id = $1';
     params.push(areaId);

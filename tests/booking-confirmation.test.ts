@@ -60,14 +60,48 @@ function createMockPayment(overrides = {}) {
 
 // ---- Booking Confirmation Validation Logic ----
 
+interface MockTransaction {
+  id: string;
+  tenant_id: string;
+  unit_id: string;
+  buyer_id: string;
+  payment_plan_id: string;
+  agent_id: string;
+  status: string;
+  eoi_amount: number;
+  eoi_date: string;
+  booking_amount: number | null;
+  booking_date: string | null;
+  total_price: number;
+  signed_at: string | null;
+  portal_token: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MockPayment {
+  id: string;
+  tenant_id: string;
+  transaction_id: string;
+  amount: number;
+  payment_method: string;
+  reference_number: string;
+  proof_url: string | null;
+  status: string;
+  confirmed_by: string;
+  confirmed_at: string;
+  created_at: string;
+}
+
 interface ValidationResult {
   valid: boolean;
   error?: string;
 }
 
 function validateBookingConfirmation(
-  transaction: any,
-  confirmedPayments: any[],
+  transaction: MockTransaction,
+  confirmedPayments: MockPayment[],
   signedAtOverride?: string | null
 ): ValidationResult {
   // Rule 1: Must have signed_at set (digital signature OR admin wet-signature confirmation)
@@ -204,7 +238,7 @@ describe('P0-4: Booking Confirmation Enforcement', () => {
         status: TRANSACTION_STATUS.BOOKING_PENDING,
         signed_at: new Date().toISOString(),
       });
-      const payments: any[] = [];
+      const payments: MockPayment[] = [];
 
       const result = validateBookingConfirmation(transaction, payments);
 
@@ -217,7 +251,7 @@ describe('P0-4: Booking Confirmation Enforcement', () => {
         status: TRANSACTION_STATUS.BOOKING_PENDING,
         signed_at: null,
       });
-      const payments: any[] = [];
+      const payments: MockPayment[] = [];
 
       const result = validateBookingConfirmation(transaction, payments);
 
@@ -331,7 +365,7 @@ describe('Booking Confirmation Flow Integration', () => {
       status: TRANSACTION_STATUS.BOOKING_PENDING,
       signed_at: null,
     });
-    const payments: any[] = [];
+    const payments: MockPayment[] = [];
 
     const result = validateBookingConfirmation(transaction, payments);
     assert.strictEqual(result.valid, false);
@@ -342,7 +376,7 @@ describe('Booking Confirmation Flow Integration', () => {
       status: TRANSACTION_STATUS.BOOKING_PENDING,
       signed_at: new Date().toISOString(),
     });
-    const payments: any[] = [];
+    const payments: MockPayment[] = [];
 
     const result = validateBookingConfirmation(transaction, payments);
     assert.strictEqual(result.valid, false);

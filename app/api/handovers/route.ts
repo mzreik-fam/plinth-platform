@@ -110,9 +110,9 @@ export async function POST(request: NextRequest) {
   let requiredPayment = totalPrice;
   
   if (planResult.length > 0 && planResult[0]?.milestones) {
-    const milestones = planResult[0].milestones as any[];
+    const milestones = planResult[0].milestones as {label?: string; percent?: number}[];
     // Find the final milestone (typically labeled "Final" or last in array)
-    const finalMilestone = milestones.find((m: any) => 
+    const finalMilestone = milestones.find((m: {label?: string; percent?: number}) => 
       m.label?.toLowerCase().includes('final') || 
       m.label?.toLowerCase().includes('handover')
     ) || milestones[milestones.length - 1]; // Fallback to last milestone

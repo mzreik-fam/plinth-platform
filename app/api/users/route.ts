@@ -110,8 +110,8 @@ export async function POST(request: NextRequest) {
     await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'user', resourceId: result[0].id, before: null, after: result[0] });
 
     return NextResponse.json({user: result[0]}, {status: 201});
-  } catch (error: any) {
-    if (error.code === '23505') {
+  } catch (error: unknown) {
+    if ((error as {code?: string}).code === '23505') {
       return NextResponse.json({error: 'Username or email already exists'}, {status: 409});
     }
     console.error('Create user error:', error);

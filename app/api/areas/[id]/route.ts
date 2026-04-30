@@ -44,8 +44,8 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{i
     });
 
     return NextResponse.json({success: true});
-  } catch (error: any) {
-    if (error.code === '23503') {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as {code: string}).code === '23503') {
       return NextResponse.json({error: 'Cannot delete area because it is referenced by projects'}, {status: 409});
     }
     console.error('Delete area error:', error);

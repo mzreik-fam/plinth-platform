@@ -52,7 +52,6 @@ export default function UnitsPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const limit = 20;
-  const [initialLoad, setInitialLoad] = useState(true);
 
   async function fetchProjects() {
     const res = await fetch("/api/projects");
@@ -81,14 +80,13 @@ export default function UnitsPage() {
     }
   }
 
-  // Initial fetch and fetch when filters change
+  // Handle filter changes
   useEffect(() => {
-    if (initialLoad) {
-      setInitialLoad(false);
+    const timeoutId = setTimeout(() => {
       fetchProjects();
-    }
-    fetchUnits(0, search, statusFilter, projectFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+      fetchUnits(0, search, statusFilter, projectFilter);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [search, statusFilter, projectFilter]);
 
   async function deleteUnit(id: string) {
@@ -188,7 +186,7 @@ export default function UnitsPage() {
                       <p className="font-semibold text-base">{unit.unit_number}</p>
                       <p className="text-sm text-muted-foreground">{unit.project_name || "—"}</p>
                     </div>
-                    <Badge variant={statusColors[unit.status] as any || "secondary"} className="shrink-0">
+                    <Badge variant={(statusColors[unit.status] || "secondary") as "default" | "secondary" | "destructive" | "outline"} className="shrink-0">
                       {t(unit.status)}
                     </Badge>
                   </div>

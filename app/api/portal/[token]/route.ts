@@ -32,8 +32,8 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{toke
 
     // Calculate remaining balance
     const totalPaid = payments
-      .filter((p: any) => p.status === 'confirmed')
-      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      .filter((p: {status: string; amount: unknown}) => p.status === 'confirmed')
+      .reduce((sum: number, p: {status: string; amount: unknown}) => sum + Number(p.amount), 0);
     const remainingBalance = Number(transaction.total_price) - totalPaid;
 
     return NextResponse.json({

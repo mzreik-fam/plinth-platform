@@ -7,24 +7,55 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {Label} from "@/components/ui/label";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 
+interface UnitOption {
+  id: string;
+  unit_number: string;
+  price: number;
+}
 
+interface BuyerOption {
+  id: string;
+  full_name: string;
+  phone: string;
+}
+
+interface PaymentPlanOption {
+  id: string;
+  name: string;
+}
+
+interface AgentOption {
+  id: string;
+  full_name: string;
+}
+
+interface TransactionForm {
+  unitId: string;
+  buyerId: string;
+  paymentPlanId: string;
+  agentId: string;
+  totalPrice: string;
+  eoiAmount: string;
+  bookingAmount: string;
+  notes: string;
+}
 
 export default function NewTransactionPage() {
   const t = useTranslations("sales");
   const tc = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const [units, setUnits] = useState<any[]>([]);
-  const [buyers, setBuyers] = useState<any[]>([]);
-  const [paymentPlans, setPaymentPlans] = useState<any[]>([]);
-  const [agents, setAgents] = useState<any[]>([]);
-  const [form, setForm] = useState<any>({
+  const [units, setUnits] = useState<UnitOption[]>([]);
+  const [buyers, setBuyers] = useState<BuyerOption[]>([]);
+  const [paymentPlans, setPaymentPlans] = useState<PaymentPlanOption[]>([]);
+  const [agents, setAgents] = useState<AgentOption[]>([]);
+  const [form, setForm] = useState<TransactionForm>({
     unitId: "",
     buyerId: "",
     paymentPlanId: "",
@@ -109,12 +140,12 @@ export default function NewTransactionPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">{t("unit")}</Label>
               <Select value={form.unitId} onValueChange={(v) => {
-                const selected = units.find((u: any) => u.id === v);
+                const selected = units.find((u) => u.id === v);
                 setForm({...form, unitId: v, totalPrice: selected ? String(selected.price) : form.totalPrice});
               }}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select unit">{units.find((u: any) => u.id === form.unitId)?.unit_number || "Select unit"}</SelectValue></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select unit">{units.find((u) => u.id === form.unitId)?.unit_number || "Select unit"}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {units.map((u: any) => (
+                  {units.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.unit_number} — AED {Number(u.price).toLocaleString()}</SelectItem>
                   ))}
                 </SelectContent>
@@ -124,9 +155,9 @@ export default function NewTransactionPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">{t("buyer")}</Label>
               <Select value={form.buyerId} onValueChange={(v) => setForm({...form, buyerId: v})}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select buyer">{buyers.find((b: any) => b.id === form.buyerId)?.full_name || "Select buyer"}</SelectValue></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select buyer">{buyers.find((b) => b.id === form.buyerId)?.full_name || "Select buyer"}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {buyers.map((b: any) => (
+                  {buyers.map((b) => (
                     <SelectItem key={b.id} value={b.id}>{b.full_name} — {b.phone}</SelectItem>
                   ))}
                 </SelectContent>
@@ -137,9 +168,9 @@ export default function NewTransactionPage() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Payment Plan</Label>
                 <Select value={form.paymentPlanId} onValueChange={(v) => setForm({...form, paymentPlanId: v})}>
-                  <SelectTrigger className="h-11"><SelectValue placeholder="Select plan">{paymentPlans.find((p: any) => p.id === form.paymentPlanId)?.name || "Select plan"}</SelectValue></SelectTrigger>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Select plan">{paymentPlans.find((p) => p.id === form.paymentPlanId)?.name || "Select plan"}</SelectValue></SelectTrigger>
                   <SelectContent>
-                    {paymentPlans.map((p: any) => (
+                    {paymentPlans.map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -148,9 +179,9 @@ export default function NewTransactionPage() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Agent</Label>
                 <Select value={form.agentId} onValueChange={(v) => setForm({...form, agentId: v})}>
-                  <SelectTrigger className="h-11"><SelectValue placeholder="Optional">{agents.find((a: any) => a.id === form.agentId)?.full_name || "Optional"}</SelectValue></SelectTrigger>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Optional">{agents.find((a) => a.id === form.agentId)?.full_name || "Optional"}</SelectValue></SelectTrigger>
                   <SelectContent>
-                    {agents.map((a: any) => (
+                    {agents.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>
                     ))}
                   </SelectContent>

@@ -1,13 +1,12 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useLocale} from "next-intl";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {UserCircle, Loader2, Mail, KeyRound} from "lucide-react";
+import {UserCircle, Loader2, KeyRound} from "lucide-react";
 import {toast} from "sonner";
 
 const roleOptions: Record<string, string> = {
@@ -19,9 +18,16 @@ const roleOptions: Record<string, string> = {
   agency_agent: "Agency Agent",
 };
 
+interface ProfileUser {
+  id: string;
+  full_name: string;
+  email?: string;
+  username: string;
+  role: string;
+}
+
 export default function ProfilePage() {
-  const locale = useLocale();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [passwordForm, setPasswordForm] = useState({current: "", new: "", confirm: ""});

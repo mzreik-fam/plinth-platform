@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useLocale} from "next-intl";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -32,18 +31,36 @@ import {
 import {Plus, FolderKanban, Loader2, MapPin, Building2, Pencil, Trash2} from "lucide-react";
 import {toast} from "sonner";
 
+interface Area {
+  id: string;
+  name: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  area_id?: string;
+  area_name?: string;
+  status: string;
+}
+
+interface EditForm {
+  name: string;
+  areaId: string;
+  status: string;
+}
+
 export default function ProjectsPage() {
-  const locale = useLocale();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [areas, setAreas] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState<{name: string; areaId: string}>({name: "", areaId: ""});
   const [saving, setSaving] = useState(false);
   const [filterAreaId, setFilterAreaId] = useState<string>("all");
 
-  const [editProject, setEditProject] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({name: "", areaId: "", status: "active"});
   const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
@@ -116,7 +133,7 @@ export default function ProjectsPage() {
     }
   }
 
-  function openEdit(project: any) {
+  function openEdit(project: Project) {
     setEditProject(project);
     setEditForm({
       name: project.name,
@@ -187,11 +204,11 @@ export default function ProjectsPage() {
                 <Label className="text-sm font-medium">Area</Label>
                 <Select value={form.areaId} onValueChange={(v) => setForm({...form, areaId: v || ""})}>
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select an area">{areas.find((a: any) => a.id === form.areaId)?.name || "Select an area"}</SelectValue>
+                    <SelectValue placeholder="Select an area">{areas.find((a) => a.id === form.areaId)?.name || "Select an area"}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>
-                    {areas.map((area: any) => (
+                    {areas.map((area) => (
                       <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -211,11 +228,11 @@ export default function ProjectsPage() {
       <div className="flex items-center gap-3">
         <Select value={filterAreaId} onValueChange={(v) => setFilterAreaId(v || "all")}>
           <SelectTrigger className="w-[240px] h-10">
-            <SelectValue placeholder="Filter by area">{areas.find((a: any) => a.id === filterAreaId)?.name || "All areas"}</SelectValue>
+            <SelectValue placeholder="Filter by area">{areas.find((a) => a.id === filterAreaId)?.name || "All areas"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All areas</SelectItem>
-            {areas.map((area: any) => (
+            {areas.map((area) => (
               <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
             ))}
           </SelectContent>
@@ -250,7 +267,7 @@ export default function ProjectsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {projects.map((project: any) => (
+                {projects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -303,11 +320,11 @@ export default function ProjectsPage() {
               <Label className="text-sm font-medium">Area</Label>
               <Select value={editForm.areaId || ""} onValueChange={(v) => setEditForm({...editForm, areaId: v || ""})}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select an area">{areas.find((a: any) => a.id === editForm.areaId)?.name || "None"}</SelectValue>
+                  <SelectValue placeholder="Select an area">{areas.find((a) => a.id === editForm.areaId)?.name || "None"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">None</SelectItem>
-                  {areas.map((area: any) => (
+                  {areas.map((area) => (
                     <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
                   ))}
                 </SelectContent>

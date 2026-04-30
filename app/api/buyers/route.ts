@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(searchParams.get('offset') || '0');
 
   const whereClauses: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
   let paramIndex = 1;
 
   if (search) {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     await logAudit({ tenantId: auth.tenantId, userId: auth.userId, action: 'create', resourceType: 'buyer', resourceId: result[0].id, before: null, after: result[0] });
 
     return NextResponse.json({buyer: result[0]}, {status: 201});
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({error: error.issues[0]?.message || 'Invalid input'}, {status: 400});
     }

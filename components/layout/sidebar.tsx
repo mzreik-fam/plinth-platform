@@ -120,14 +120,19 @@ export function Sidebar() {
     // Cache user in sessionStorage to avoid refetching on every navigation
     const cachedUser = sessionStorage.getItem("plinth_user");
     if (cachedUser) {
-      try { setUser(JSON.parse(cachedUser)); } catch {}
+      try {
+        const parsed = JSON.parse(cachedUser);
+        setTimeout(() => setUser(parsed), 0);
+      } catch {}
     } else {
       fetch("/api/users/me")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data?.user) {
-            setUser(data.user);
-            sessionStorage.setItem("plinth_user", JSON.stringify(data.user));
+            setTimeout(() => {
+              setUser(data.user);
+              sessionStorage.setItem("plinth_user", JSON.stringify(data.user));
+            }, 0);
           }
         })
         .catch(() => {});
@@ -136,7 +141,7 @@ export function Sidebar() {
     fetch("/api/notifications?unread=true")
       .then((r) => (r.ok ? r.json() : {notifications: []}))
       .then((data) => {
-        setUnreadCount(data.notifications?.length || 0);
+        setTimeout(() => setUnreadCount(data.notifications?.length || 0), 0);
       })
       .catch(() => {});
   }, []);

@@ -161,8 +161,8 @@ export async function GET(request: NextRequest) {
             break; // Only send one reminder per transaction per cron run
           }
         }
-      } catch (err: any) {
-        results.errors.push(`EOI reminder failed for ${tx.id}: ${err.message}`);
+      } catch (err: unknown) {
+        results.errors.push(`EOI reminder failed for ${tx.id}: ${(err as Error).message}`);
       }
     }
 
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
 
     for (const tx of upcomingPayments) {
       try {
-        const milestones = tx.milestones as any[];
+        const milestones = tx.milestones as {label: string; percent: number; due_days_from_booking: number}[];
         const paid = Number(tx.paid || 0);
         const totalPrice = Number(tx.total_price);
         const bookingDate = new Date(tx.booking_date);
@@ -238,8 +238,8 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-      } catch (err: any) {
-        results.errors.push(`Payment reminder failed for ${tx.transaction_id}: ${err.message}`);
+      } catch (err: unknown) {
+        results.errors.push(`Payment reminder failed for ${tx.transaction_id}: ${(err as Error).message}`);
       }
     }
 
@@ -270,7 +270,7 @@ export async function GET(request: NextRequest) {
 
     for (const tx of overduePayments) {
       try {
-        const milestones = tx.milestones as any[];
+        const milestones = tx.milestones as {label: string; percent: number; due_days_from_booking: number}[];
         const totalPrice = Number(tx.total_price);
         const bookingDate = new Date(tx.booking_date);
         const penaltyRate = Number(tx.penalty_rate || 0.08);
@@ -310,8 +310,8 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-      } catch (err: any) {
-        results.errors.push(`Penalty calc failed for ${tx.transaction_id}: ${err.message}`);
+      } catch (err: unknown) {
+        results.errors.push(`Penalty calc failed for ${tx.transaction_id}: ${(err as Error).message}`);
       }
     }
 
@@ -320,7 +320,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       ...results,
     });
-  } catch (err: any) {
-    return NextResponse.json({error: err.message}, {status: 500});
+  } catch (err: unknown) {
+    return NextResponse.json({error: (err as Error).message}, {status: 500});
   }
 }
