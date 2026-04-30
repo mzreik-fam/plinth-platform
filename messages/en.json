@@ -13,6 +13,8 @@
     "handovers": "Handovers",
     "terminations": "Terminations",
     "approvals": "Approvals",
+    "payment_plans": "Payment Plans",
+    "audit_logs": "Audit Logs",
     "settings": "Settings",
     "logout": "Logout"
   },
