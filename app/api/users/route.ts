@@ -4,7 +4,9 @@ import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
 import {canManageUsers} from '@/lib/roles';
 import {hashPassword} from '@/lib/auth';
+import {notifyUserInvitation} from '@/lib/email';
 import {z} from 'zod';
+import crypto from 'crypto';
 
 async function getAuthUser() {
   const token = await getSessionCookie();
@@ -19,7 +21,6 @@ async function getAuthUser() {
 const createUserSchema = z.object({
   username: z.string().min(3),
   email: z.string().email(),
-  password: z.string().min(6),
   fullName: z.string().min(1),
   role: z.enum(['super_admin', 'project_manager', 'admin', 'internal_agent', 'agency_admin', 'agency_agent', 'buyer']),
 });
@@ -62,15 +63,36 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createUserSchema.parse(body);
-    const passwordHash = await hashPassword(data.password);
+
+    // Generate a random invite token
+    const inviteToken = crypto.randomUUID();
+    // Generate a temporary random password hash (user will set their own)
+    const tempPasswordHash = await hashPassword(crypto.randomBytes(32).toString('hex'));
 
     await sql`SELECT set_config('app.current_tenant_id', ${auth.tenantId}, true)`;
 
     const result = await sql`
-      INSERT INTO users (tenant_id, email, username, password_hash, full_name, role)
-      VALUES (${auth.tenantId}, ${data.email}, ${data.username}, ${passwordHash}, ${data.fullName}, ${data.role})
+      INSERT INTO users (tenant_id, email, username, password_hash, full_name, role, invite_token, invite_expires_at)
+      VALUES (
+        ${auth.tenantId},
+        ${data.email},
+        ${data.username},
+        ${tempPasswordHash},
+        ${data.fullName},
+        ${data.role},
+        ${inviteToken},
+        NOW() + INTERVAL '7 days'
+      )
       RETURNING id, email, username, full_name, role, is_active, created_at
     `;
+
+    // Send invitation email
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/en/invite/${inviteToken}`;
+    await notifyUserInvitation({
+      to: data.email,
+      fullName: data.fullName,
+      inviteUrl,
+    });
 
     return NextResponse.json({user: result[0]}, {status: 201});
   } catch (error: any) {

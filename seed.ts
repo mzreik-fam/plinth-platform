@@ -27,6 +27,8 @@ async function seed() {
         full_name TEXT NOT NULL,
         role TEXT NOT NULL CHECK (role IN ('platform_owner','super_admin','project_manager','admin','internal_agent','agency_admin','agency_agent','buyer')),
         is_active BOOLEAN DEFAULT true,
+        invite_token TEXT UNIQUE,
+        invite_expires_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         UNIQUE(tenant_id, email),

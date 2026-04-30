@@ -2,7 +2,6 @@ import {NextRequest, NextResponse} from 'next/server';
 import {sql} from '@/lib/db';
 import {verifyToken} from '@/lib/auth';
 import {getSessionCookie} from '@/lib/session';
-import {notifyTerminationStep} from '@/lib/email';
 
 async function getAuthUser() {
   const token = await getSessionCookie();
@@ -62,22 +61,6 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
         SET status = 'completed', updated_at = NOW()
         WHERE id = ${caseId}
       `;
-    }
-
-    // Notify buyer about termination step progress
-    const buyerData = await sql`
-      SELECT b.email, tc.reason
-      FROM termination_cases tc
-      JOIN buyers b ON tc.buyer_id = b.id
-      WHERE tc.id = ${caseId}
-    `;
-
-    if (buyerData.length > 0 && buyerData[0].email) {
-      await notifyTerminationStep({
-        to: buyerData[0].email,
-        stepName: result[0].step_name,
-        deadline: result[0].deadline_date ? new Date(result[0].deadline_date).toLocaleDateString() : 'N/A',
-      });
     }
   }
 

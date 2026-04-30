@@ -135,12 +135,14 @@ export async function notifySnaggingTicketCreated({to, unitNumber, ticketTitle}:
   });
 }
 
-export async function notifyTerminationStep({to, stepName, deadline}: {
-  to: string; stepName: string; deadline: string;
+export async function notifyUserInvitation({to, fullName, inviteUrl}: {
+  to: string; fullName: string; inviteUrl: string;
 }) {
   return sendNotificationEmail({
     to,
-    title: `Termination Step: ${stepName}`,
-    body: `The termination process has moved to <strong>${stepName}</strong>. The deadline for this step is <strong>${deadline}</strong>. Please ensure all required documentation is submitted.`,
+    title: 'You\'ve been invited to Plinth',
+    body: `Hi <strong>${fullName}</strong>,<br><br>You have been invited to join <strong>Plinth</strong> — the real estate project management platform.<br><br>Click the button below to set up your account and create your password.`,
+    actionUrl: inviteUrl,
+    actionLabel: 'Accept Invitation',
   });
 }
