@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     `;
 
     // Send invitation email
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/en/invite/${inviteToken}`;
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL?.trim()}/en/invite/${inviteToken}`;
     await notifyUserInvitation({
       to: data.email,
       fullName: data.fullName,
