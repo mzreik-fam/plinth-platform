@@ -9,6 +9,8 @@ import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Plus, Users, Loader2, Mail, Phone, Globe, Search, ShoppingCart} from "lucide-react";
 
+
+
 export default function BuyersPage() {
   const t = useTranslations("buyers");
   const tc = useTranslations("common");

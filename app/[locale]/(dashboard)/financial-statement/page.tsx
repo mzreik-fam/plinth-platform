@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/table";
 import {FileText, TrendingUp, AlertTriangle, CheckCircle2, Clock} from "lucide-react";
 
+
+
 export default function FinancialStatementPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();

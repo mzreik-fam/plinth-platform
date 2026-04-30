@@ -11,6 +11,8 @@ import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 
+
+
 export default function NewBuyerPage() {
   const t = useTranslations("buyers");
   const tc = useTranslations("common");

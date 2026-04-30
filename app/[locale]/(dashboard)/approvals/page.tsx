@@ -27,6 +27,8 @@ import {
 import {ClipboardCheck, CheckCircle2, XCircle, Loader2} from "lucide-react";
 import {toast} from "sonner";
 
+
+
 export default function ApprovalsPage() {
   const [approvals, setApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function ApprovalsPage() {
                       {canReview ? (
                         <div className="flex justify-end gap-2">
                           <AlertDialog open={confirmAction?.id === a.id && confirmAction?.status === "approved"} onOpenChange={(open) => !open && setConfirmAction(null)}>
-                            <AlertDialogTrigger asChild>
+                            <AlertDialogTrigger>
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -143,7 +145,7 @@ export default function ApprovalsPage() {
                           </AlertDialog>
 
                           <AlertDialog open={confirmAction?.id === a.id && confirmAction?.status === "rejected"} onOpenChange={(open) => !open && setConfirmAction(null)}>
-                            <AlertDialogTrigger asChild>
+                            <AlertDialogTrigger>
                               <Button
                                 size="sm"
                                 variant="outline"

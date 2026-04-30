@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/table";
 import {AlertTriangle, Eye, Plus} from "lucide-react";
 
+
+
 export default function TerminationsPage() {
   const locale = useLocale();
   const [cases, setCases] = useState<any[]>([]);

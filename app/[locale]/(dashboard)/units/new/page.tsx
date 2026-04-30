@@ -12,6 +12,8 @@ import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
 import {toast} from "sonner";
 
+
+
 export default function NewUnitPage() {
   const t = useTranslations("units");
   const tc = useTranslations("common");
@@ -90,16 +92,22 @@ export default function NewUnitPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label className="text-sm font-medium">Project *</Label>
-              <Select value={form.projectId} onValueChange={(v) => setForm({...form, projectId: v || ""})}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p: any) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {projects.length === 0 ? (
+                <div className="p-3 rounded-lg border border-dashed text-sm text-muted-foreground">
+                  No projects available. <Link href={`/${locale}/projects`} className="text-primary underline">Create a project first</Link>.
+                </div>
+              ) : (
+                <Select value={form.projectId} onValueChange={(v) => setForm({...form, projectId: v || ""})}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">

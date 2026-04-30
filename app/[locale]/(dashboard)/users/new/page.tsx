@@ -10,6 +10,9 @@ import {Card, CardContent} from "@/components/ui/card";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ArrowLeft, Loader2, Mail} from "lucide-react";
 import Link from "next/link";
+import {toast} from "sonner";
+
+
 
 const roleOptions = [
   {value: "super_admin", label: "Super Admin"},
@@ -46,13 +49,14 @@ export default function NewUserPage() {
       });
 
       if (res.ok) {
+        toast.success("Invitation sent successfully");
         setSent(true);
       } else {
         const data = await res.json();
-        alert(data.error || tc("error"));
+        toast.error(data.error || tc("error"));
       }
     } catch {
-      alert(tc("error"));
+      toast.error(tc("error"));
     } finally {
       setLoading(false);
     }

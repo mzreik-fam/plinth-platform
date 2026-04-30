@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest, {params}: {params: Promise<{id
     return NextResponse.json({user: result[0]});
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({error: error.errors[0]?.message || 'Invalid input'}, {status: 400});
+      return NextResponse.json({error: error.issues[0]?.message || 'Invalid input'}, {status: 400});
     }
     console.error('Update user error:', error);
     return NextResponse.json({error: 'Failed to update user'}, {status: 500});

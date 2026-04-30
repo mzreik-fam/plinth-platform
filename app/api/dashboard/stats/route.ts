@@ -90,5 +90,7 @@ export async function GET(request: NextRequest) {
     openSnagging: Number(combinedStats[0]?.open_snagging) || 0,
     penalties: { count: Number(combinedStats[0]?.penalty_count) || 0, total: Number(combinedStats[0]?.penalty_total) || 0 },
     notifications: { unread: Number(combinedStats[0]?.unread_count) || 0 },
+  }, {
+    headers: {'Cache-Control': 'private, max-age=30'},
   });
 }

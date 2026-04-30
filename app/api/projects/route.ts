@@ -23,9 +23,12 @@ export async function GET(request: NextRequest) {
     SELECT id, name, location, area, status
     FROM projects
     ORDER BY created_at DESC
+    LIMIT 200
   `;
 
-  return NextResponse.json({projects});
+  return NextResponse.json({projects}, {
+    headers: {'Cache-Control': 'private, max-age=300'},
+  });
 }
 
 export async function POST(request: NextRequest) {

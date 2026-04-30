@@ -39,9 +39,12 @@ export async function GET(request: NextRequest) {
     JOIN buyers b ON t.buyer_id = b.id
     ${status ? sql`WHERE h.status = ${status}` : sql``}
     ORDER BY h.created_at DESC
+    LIMIT 200
   `;
 
-  return NextResponse.json({handovers});
+  return NextResponse.json({handovers}, {
+    headers: {'Cache-Control': 'private, max-age=30'},
+  });
 }
 
 export async function POST(request: NextRequest) {

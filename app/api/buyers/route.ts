@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({buyer: result[0]}, {status: 201});
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({error: error.errors[0]?.message || 'Invalid input'}, {status: 400});
+      return NextResponse.json({error: error.issues[0]?.message || 'Invalid input'}, {status: 400});
     }
     console.error('Create buyer error:', error);
     return NextResponse.json({error: 'Failed to create buyer'}, {status: 500});

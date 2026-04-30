@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
     SELECT id, name, description, milestones, is_default
     FROM payment_plans
     ORDER BY created_at DESC
+    LIMIT 200
   `;
 
-  return NextResponse.json({paymentPlans});
+  return NextResponse.json({paymentPlans}, {
+    headers: {'Cache-Control': 'private, max-age=300'},
+  });
 }

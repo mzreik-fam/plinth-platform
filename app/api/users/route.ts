@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
   }
 
   const users = await query;
-  return NextResponse.json({users});
+  return NextResponse.json({users}, {
+    headers: {'Cache-Control': 'private, max-age=60'},
+  });
 }
 
 export async function POST(request: NextRequest) {

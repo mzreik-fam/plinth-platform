@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({error: 'User not found'}, {status: 404});
     }
 
-    return NextResponse.json({user: users[0]});
+    return NextResponse.json({user: users[0]}, {
+      headers: {'Cache-Control': 'private, max-age=60'},
+    });
   } catch {
     return NextResponse.json({error: 'Unauthorized'}, {status: 401});
   }

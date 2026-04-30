@@ -7,6 +7,9 @@ import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Plus, UserCircle, Loader2, Trash2} from "lucide-react";
+import {toast} from "sonner";
+
+
 
 export default function UsersPage() {
   const t = useTranslations("users");
@@ -38,7 +41,7 @@ export default function UsersPage() {
       if (!res.ok) throw new Error("Failed to revoke");
       setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch {
-      alert(t("revokeError"));
+      toast.error(t("revokeError"));
     }
   }
 

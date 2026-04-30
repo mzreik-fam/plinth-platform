@@ -37,9 +37,12 @@ export async function GET(request: NextRequest) {
     LEFT JOIN users rev ON ua.reviewed_by = rev.id
     ${status ? sql`WHERE ua.status = ${status}` : sql``}
     ORDER BY ua.requested_at DESC
+    LIMIT 200
   `;
 
-  return NextResponse.json({approvals});
+  return NextResponse.json({approvals}, {
+    headers: {'Cache-Control': 'private, max-age=30'},
+  });
 }
 
 export async function POST(request: NextRequest) {

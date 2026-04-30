@@ -10,6 +10,8 @@ import {Badge} from "@/components/ui/badge";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Plus, Eye, ShoppingCart, Loader2, Search} from "lucide-react";
 
+
+
 const statusColors: Record<string, string> = {
   eoi: "warning",
   booking_pending: "secondary",

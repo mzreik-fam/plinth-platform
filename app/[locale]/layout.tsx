@@ -1,3 +1,4 @@
+import type {Metadata} from 'next';
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import {notFound} from 'next/navigation';
@@ -7,6 +8,14 @@ import {GeistSans} from 'geist/font/sans';
 import {GeistMono} from 'geist/font/mono';
 import {Toaster} from '@/components/ui/sonner';
 import '../globals.css';
+
+export const metadata: Metadata = {
+  title: {
+    default: 'Plinth - Real Estate Platform',
+    template: '%s | Plinth',
+  },
+  description: 'Real estate sales, handover, and termination management platform.',
+};
 
 export default async function LocaleLayout({
   children,

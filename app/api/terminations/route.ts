@@ -38,9 +38,12 @@ export async function GET(request: NextRequest) {
     JOIN transactions t ON tc.transaction_id = t.id
     ${status ? sql`WHERE tc.status = ${status}` : sql``}
     ORDER BY tc.created_at DESC
+    LIMIT 200
   `;
 
-  return NextResponse.json({cases});
+  return NextResponse.json({cases}, {
+    headers: {'Cache-Control': 'private, max-age=30'},
+  });
 }
 
 export async function POST(request: NextRequest) {

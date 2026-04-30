@@ -17,6 +17,8 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Plus, FolderKanban, Loader2, MapPin, Building2} from "lucide-react";
 
+
+
 export default function ProjectsPage() {
   const locale = useLocale();
   const [projects, setProjects] = useState<any[]>([]);
