@@ -8,8 +8,9 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ArrowLeft} from "lucide-react";
+import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
+import {toast} from "sonner";
 
 export default function NewTransactionPage() {
   const t = useTranslations("sales");
@@ -60,25 +61,26 @@ export default function NewTransactionPage() {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-          unitId: form.unitId,
-          buyerId: form.buyerId,
-          paymentPlanId: form.paymentPlanId || undefined,
-          agentId: form.agentId || undefined,
-          totalPrice: Number(form.totalPrice),
-          eoiAmount: form.eoiAmount ? Number(form.eoiAmount) : undefined,
-          bookingAmount: form.bookingAmount ? Number(form.bookingAmount) : undefined,
+          unit_id: form.unitId,
+          buyer_id: form.buyerId,
+          payment_plan_id: form.paymentPlanId || undefined,
+          agent_id: form.agentId || undefined,
+          total_price: Number(form.totalPrice),
+          eoi_amount: form.eoiAmount ? Number(form.eoiAmount) : undefined,
+          booking_amount: form.bookingAmount ? Number(form.bookingAmount) : undefined,
           notes: form.notes,
         }),
       });
 
       if (res.ok) {
+        toast.success("Transaction created successfully");
         router.push(`/${locale}/sales`);
       } else {
         const data = await res.json();
-        alert(data.error || tc("error"));
+        toast.error(data.error || tc("error"));
       }
     } catch {
-      alert(tc("error"));
+      toast.error(tc("error"));
     } finally {
       setLoading(false);
     }
@@ -103,7 +105,10 @@ export default function NewTransactionPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label className="text-sm font-medium">{t("unit")}</Label>
-              <Select value={form.unitId} onValueChange={(v) => setForm({...form, unitId: v})}>
+              <Select value={form.unitId} onValueChange={(v) => {
+                const selected = units.find((u: any) => u.id === v);
+                setForm({...form, unitId: v, totalPrice: selected ? String(selected.price) : form.totalPrice});
+              }}>
                 <SelectTrigger className="h-11"><SelectValue placeholder="Select unit" /></SelectTrigger>
                 <SelectContent>
                   {units.map((u: any) => (
@@ -172,7 +177,9 @@ export default function NewTransactionPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={loading} className="h-11 px-6">{tc("save")}</Button>
+              <Button type="submit" disabled={loading} className="h-11 px-6">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}
+              </Button>
               <Link href={`/${locale}/sales`}>
                 <Button variant="outline" className="h-11 px-6">{tc("cancel")}</Button>
               </Link>

@@ -5,6 +5,7 @@ import {routing} from '@/lib/i18n';
 import {ThemeProvider} from '@/components/layout/theme-provider';
 import {GeistSans} from 'geist/font/sans';
 import {GeistMono} from 'geist/font/mono';
+import {Toaster} from '@/components/ui/sonner';
 import '../globals.css';
 
 export default async function LocaleLayout({
@@ -34,6 +35,7 @@ export default async function LocaleLayout({
         >
           <NextIntlClientProvider messages={messages}>
             {children}
+            <Toaster position="top-right" richColors />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

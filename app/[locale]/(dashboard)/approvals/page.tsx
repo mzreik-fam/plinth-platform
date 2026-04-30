@@ -13,12 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {ClipboardCheck, CheckCircle2, XCircle} from "lucide-react";
+import {ClipboardCheck, CheckCircle2, XCircle, Loader2} from "lucide-react";
+import {toast} from "sonner";
 
 export default function ApprovalsPage() {
   const [approvals, setApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/users/me")
@@ -36,12 +38,25 @@ export default function ApprovalsPage() {
   }
 
   async function reviewApproval(id: string, status: "approved" | "rejected") {
-    await fetch(`/api/unit-approvals/${id}`, {
-      method: "PATCH",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({status}),
-    });
-    await loadApprovals();
+    setProcessingId(id);
+    try {
+      const res = await fetch(`/api/unit-approvals/${id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({status}),
+      });
+      if (res.ok) {
+        toast.success(`Approval ${status}`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to process");
+      }
+    } catch {
+      toast.error("Failed to process");
+    } finally {
+      setProcessingId(null);
+      await loadApprovals();
+    }
   }
 
   const canReview = user?.role === "super_admin" || user?.role === "project_manager" || user?.role === "platform_owner";
@@ -94,18 +109,18 @@ export default function ApprovalsPage() {
                             variant="outline"
                             className="text-green-600"
                             onClick={() => reviewApproval(a.id, "approved")}
+                            disabled={processingId === a.id}
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Approve
+                            {processingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4 mr-1" /> Approve</>}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             className="text-red-600"
                             onClick={() => reviewApproval(a.id, "rejected")}
+                            disabled={processingId === a.id}
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
+                            {processingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4 mr-1" /> Reject</>}
                           </Button>
                         </div>
                       ) : (

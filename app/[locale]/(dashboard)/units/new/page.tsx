@@ -8,8 +8,9 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ArrowLeft} from "lucide-react";
+import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
+import {toast} from "sonner";
 
 export default function NewUnitPage() {
   const t = useTranslations("units");
@@ -57,12 +58,14 @@ export default function NewUnitPage() {
       });
 
       if (res.ok) {
+        toast.success("Unit created successfully");
         router.push(`/${locale}/units`);
       } else {
-        alert(tc("error"));
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || tc("error"));
       }
     } catch {
-      alert(tc("error"));
+      toast.error(tc("error"));
     } finally {
       setLoading(false);
     }
@@ -72,20 +75,23 @@ export default function NewUnitPage() {
     <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center gap-2">
         <Link href={`/${locale}/units`}>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold">{t("newUnit")}</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t("newUnit")}</h1>
+          <p className="text-sm text-muted-foreground">Add a new property unit</p>
+        </div>
       </div>
 
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label>Project</Label>
+              <Label className="text-sm font-medium">Project *</Label>
               <Select value={form.projectId} onValueChange={(v) => setForm({...form, projectId: v || ""})}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
                 <SelectContent>
@@ -97,16 +103,14 @@ export default function NewUnitPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("unitNumber")}</Label>
-              <Input value={form.unitNumber} onChange={(e) => setForm({...form, unitNumber: e.target.value})} required />
+              <Label className="text-sm font-medium">{t("unitNumber")} *</Label>
+              <Input value={form.unitNumber} onChange={(e) => setForm({...form, unitNumber: e.target.value})} required className="h-11" />
             </div>
 
             <div className="space-y-2">
-              <Label>{t("type")}</Label>
+              <Label className="text-sm font-medium">{t("type")}</Label>
               <Select value={form.unitType} onValueChange={(v) => setForm({...form, unitType: v || "apartment"})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="villa">{t("villa")}</SelectItem>
                   <SelectItem value="plot">{t("plot")}</SelectItem>
@@ -117,32 +121,30 @@ export default function NewUnitPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t("bedrooms")}</Label>
-                <Input type="number" value={form.bedrooms} onChange={(e) => setForm({...form, bedrooms: e.target.value})} />
+                <Label className="text-sm font-medium">{t("bedrooms")}</Label>
+                <Input type="number" value={form.bedrooms} onChange={(e) => setForm({...form, bedrooms: e.target.value})} className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label>{t("bathrooms")}</Label>
-                <Input type="number" value={form.bathrooms} onChange={(e) => setForm({...form, bathrooms: e.target.value})} />
+                <Label className="text-sm font-medium">{t("bathrooms")}</Label>
+                <Input type="number" value={form.bathrooms} onChange={(e) => setForm({...form, bathrooms: e.target.value})} className="h-11" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t("area")}</Label>
-                <Input type="number" value={form.areaSqft} onChange={(e) => setForm({...form, areaSqft: e.target.value})} />
+                <Label className="text-sm font-medium">{t("area")}</Label>
+                <Input type="number" value={form.areaSqft} onChange={(e) => setForm({...form, areaSqft: e.target.value})} className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label>{t("price")}</Label>
-                <Input type="number" value={form.price} onChange={(e) => setForm({...form, price: e.target.value})} required />
+                <Label className="text-sm font-medium">{t("price")} *</Label>
+                <Input type="number" value={form.price} onChange={(e) => setForm({...form, price: e.target.value})} required className="h-11" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="text-sm font-medium">Status</Label>
               <Select value={form.status} onValueChange={(v) => setForm({...form, status: v || "draft"})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">{t("draft")}</SelectItem>
                   <SelectItem value="available">{t("available")}</SelectItem>
@@ -150,10 +152,12 @@ export default function NewUnitPage() {
               </Select>
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={loading}>{tc("save")}</Button>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={loading} className="h-11 px-6">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}
+              </Button>
               <Link href={`/${locale}/units`}>
-                <Button variant="outline">{tc("cancel")}</Button>
+                <Button variant="outline" className="h-11 px-6">{tc("cancel")}</Button>
               </Link>
             </div>
           </form>

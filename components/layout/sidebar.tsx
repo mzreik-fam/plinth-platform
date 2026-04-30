@@ -48,6 +48,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/users/me")
@@ -78,7 +79,7 @@ export function Sidebar() {
     return pathname === fullPath || pathname.startsWith(fullPath + "/");
   };
 
-  function NavItem({item}: {item: {key: string; href: string; icon: any}}) {
+  function NavItem({item, onClick}: {item: {key: string; href: string; icon: any}; onClick?: () => void}) {
     const Icon = item.icon;
     const active = isActive(item.href);
     const href = `/${locale}${item.href}`;
@@ -87,6 +88,7 @@ export function Sidebar() {
       <Link
         key={item.key}
         href={href}
+        onClick={onClick}
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
           active
             ? "bg-primary text-primary-foreground shadow-sm"
@@ -100,7 +102,7 @@ export function Sidebar() {
     );
   }
 
-  function NavSection({title, items}: {title?: string; items: typeof mainNavItems}) {
+  function NavSection({title, items, onItemClick}: {title?: string; items: typeof mainNavItems; onItemClick?: () => void}) {
     return (
       <div className="space-y-0.5">
         {title && (
@@ -109,7 +111,7 @@ export function Sidebar() {
           </p>
         )}
         {items.map((item) => (
-          <NavItem key={item.key} item={item} />
+          <NavItem key={item.key} item={item} onClick={onItemClick} />
         ))}
       </div>
     );
@@ -164,12 +166,12 @@ export function Sidebar() {
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <span className="text-sm font-bold text-primary">
-                    {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                    {user.full_name?.charAt(0)?.toUpperCase() || "U"}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{user.full_name}</p>
-                  <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace("_", " ")}</p>
+                  <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace(/_/g, " ")}</p>
                 </div>
               </div>
             </div>
@@ -208,7 +210,7 @@ export function Sidebar() {
               )}
             </Button>
           </Link>
-          <Sheet>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger>
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Menu className="h-5 w-5" />
@@ -228,21 +230,21 @@ export function Sidebar() {
                   </div>
                 </div>
                 <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
-                  <NavSection items={mainNavItems} />
-                  <NavSection title="Workflows" items={processNavItems} />
-                  <NavSection title="Admin" items={adminNavItems} />
+                  <NavSection items={mainNavItems} onItemClick={() => setMobileOpen(false)} />
+                  <NavSection title="Workflows" items={processNavItems} onItemClick={() => setMobileOpen(false)} />
+                  <NavSection title="Admin" items={adminNavItems} onItemClick={() => setMobileOpen(false)} />
                 </nav>
                 <div className="p-4 border-t space-y-3">
                   {user && (
                     <div className="flex items-center gap-3 px-1">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <span className="text-xs font-bold text-primary">
-                          {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                          {user.full_name?.charAt(0)?.toUpperCase() || "U"}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{user.full_name}</p>
-                        <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace("_", " ")}</p>
+                        <p className="text-[11px] text-muted-foreground capitalize">{user.role?.replace(/_/g, " ")}</p>
                       </div>
                     </div>
                   )}

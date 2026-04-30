@@ -164,6 +164,7 @@ export default function TransactionDetailPage() {
           )}
           {(transaction.status === 'eoi' || transaction.status === 'booking_pending' || transaction.status === 'confirmed') && (
             <Button variant="destructive" onClick={async () => {
+              if (!confirm('Are you sure you want to terminate this transaction? This will start the DLD termination process.')) return;
               const res = await fetch("/api/terminations", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},

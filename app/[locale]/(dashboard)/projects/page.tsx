@@ -15,14 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {Plus, FolderKanban, Loader2, MapPin, Building2} from "lucide-react";
 
 export default function ProjectsPage() {

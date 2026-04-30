@@ -24,6 +24,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {KeyRound, CheckCircle2, Upload, Wrench, ArrowLeft} from "lucide-react";
 
 const statusLabels: Record<string, string> = {
@@ -259,15 +266,14 @@ export default function HandoverDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Severity</Label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2"
-                    value={newTicket.severity}
-                    onChange={(e) => setNewTicket({...newTicket, severity: e.target.value})}
-                  >
-                    <option value="minor">Minor</option>
-                    <option value="major">Major</option>
-                    <option value="critical">Critical</option>
-                  </select>
+                  <Select value={newTicket.severity} onValueChange={(v) => setNewTicket({...newTicket, severity: v || "minor"})}>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minor">Minor</SelectItem>
+                      <SelectItem value="major">Major</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button className="w-full" onClick={createTicket}>Create Ticket</Button>
               </div>

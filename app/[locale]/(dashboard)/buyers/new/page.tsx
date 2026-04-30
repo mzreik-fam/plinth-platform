@@ -7,8 +7,9 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Card, CardContent} from "@/components/ui/card";
-import {ArrowLeft} from "lucide-react";
+import {ArrowLeft, Loader2} from "lucide-react";
 import Link from "next/link";
+import {toast} from "sonner";
 
 export default function NewBuyerPage() {
   const t = useTranslations("buyers");
@@ -38,12 +39,14 @@ export default function NewBuyerPage() {
       });
 
       if (res.ok) {
+        toast.success("Buyer created successfully");
         router.push(`/${locale}/buyers`);
       } else {
-        alert(tc("error"));
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || tc("error"));
       }
     } catch {
-      alert(tc("error"));
+      toast.error(tc("error"));
     } finally {
       setLoading(false);
     }
@@ -86,16 +89,24 @@ export default function NewBuyerPage() {
                 <Input value={form.emiratesId} onChange={(e) => setForm({...form, emiratesId: e.target.value})} className="h-11" />
               </div>
               <div className="space-y-2">
+                <Label className="text-sm font-medium">Passport Number</Label>
+                <Input value={form.passportNumber} onChange={(e) => setForm({...form, passportNumber: e.target.value})} className="h-11" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label className="text-sm font-medium">Nationality</Label>
                 <Input value={form.nationality} onChange={(e) => setForm({...form, nationality: e.target.value})} className="h-11" />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Address</Label>
-              <Input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="h-11" />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Address</Label>
+                <Input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} className="h-11" />
+              </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={loading} className="h-11 px-6">{tc("save")}</Button>
+              <Button type="submit" disabled={loading} className="h-11 px-6">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}
+              </Button>
               <Link href={`/${locale}/buyers`}>
                 <Button variant="outline" className="h-11 px-6">{tc("cancel")}</Button>
               </Link>

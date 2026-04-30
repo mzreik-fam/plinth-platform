@@ -9,8 +9,9 @@ import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ArrowLeft, Send} from "lucide-react";
+import {ArrowLeft, Send, Loader2} from "lucide-react";
 import Link from "next/link";
+import {toast} from "sonner";
 
 export default function UnitDetailPage() {
   const t = useTranslations("units");
@@ -24,6 +25,8 @@ export default function UnitDetailPage() {
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     fetchUnit();
@@ -44,24 +47,32 @@ export default function UnitDetailPage() {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch(`/api/units/${id}`, {
-      method: "PATCH",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        unitNumber: form.unit_number,
-        unitType: form.unit_type,
-        bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
-        bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
-        areaSqft: form.area_sqft ? Number(form.area_sqft) : null,
-        price: Number(form.price),
-        status: form.status,
-      }),
-    });
-    if (res.ok) {
-      setEditMode(false);
-      fetchUnit();
-    } else {
-      alert(tc("error"));
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/units/${id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          unitNumber: form.unit_number,
+          unitType: form.unit_type,
+          bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
+          bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
+          areaSqft: form.area_sqft ? Number(form.area_sqft) : null,
+          price: Number(form.price),
+          status: form.status,
+        }),
+      });
+      if (res.ok) {
+        setEditMode(false);
+        fetchUnit();
+        toast.success("Unit updated successfully");
+      } else {
+        toast.error(tc("error"));
+      }
+    } catch {
+      toast.error(tc("error"));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -126,16 +137,14 @@ export default function UnitDetailPage() {
                   <SelectContent>
                     <SelectItem value="draft">{t("draft")}</SelectItem>
                     <SelectItem value="available">{t("available")}</SelectItem>
-                    <SelectItem value="pre_booked">{t("pre_booked")}</SelectItem>
-                    <SelectItem value="booked">{t("booked")}</SelectItem>
-                    <SelectItem value="handed_over">{t("handed_over")}</SelectItem>
-                    <SelectItem value="terminated">{t("terminated")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">{tc("save")}</Button>
-                <Button variant="outline" onClick={() => setEditMode(false)}>{tc("cancel")}</Button>
+                <Button type="submit" disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}
+                </Button>
+                <Button variant="outline" onClick={() => setEditMode(false)} disabled={saving}>{tc("cancel")}</Button>
               </div>
             </form>
           ) : (
@@ -166,15 +175,27 @@ export default function UnitDetailPage() {
               </div>
               <Button onClick={() => setEditMode(true)}>{tc("edit")}</Button>
               {unit.status === 'draft' && (
-                <Button variant="outline" onClick={async () => {
-                  const res = await fetch("/api/unit-approvals", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({unit_id: id}),
-                  });
-                  if (res.ok) alert("Approval requested!");
+                <Button variant="outline" disabled={requesting} onClick={async () => {
+                  setRequesting(true);
+                  try {
+                    const res = await fetch("/api/unit-approvals", {
+                      method: "POST",
+                      headers: {"Content-Type": "application/json"},
+                      body: JSON.stringify({unit_id: id}),
+                    });
+                    if (res.ok) {
+                      toast.success("Approval requested successfully");
+                    } else {
+                      const data = await res.json().catch(() => ({}));
+                      toast.error(data.error || "Failed to request approval");
+                    }
+                  } catch {
+                    toast.error("Failed to request approval");
+                  } finally {
+                    setRequesting(false);
+                  }
                 }}>
-                  <Send className="h-4 w-4 mr-1" />
+                  {requesting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
                   Request Approval
                 </Button>
               )}
